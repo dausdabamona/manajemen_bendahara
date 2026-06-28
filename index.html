@@ -801,13 +801,13 @@ var _allPenyedia  = null;
 var INST = {
   namaWP   : 'Politeknik Kelautan dan Perikanan Sorong',
   // Alamat untuk kop kuitansi
-  alamatKop1: 'Jl. Kapitan Pattimura Kel. Malaingkedi Distrik Sorong Utara',
-  alamatKop2: 'Kota Sorong – Papua Barat Daya | Telp. (0951) – 321039',
+  alamatKop1: 'Jalan Kapitan Pattimura, Tanjung Kasuari - Suprau, Kotak Pos 118 Kota Sorong, Papua Barat Daya 98411',
+  alamatKop2: 'Laman: www.polikpsorong.ac.id | Surel: polteksorong@kkp.go.id',
   npwpWP   : '',  // NPWP instansi (diinput kemudian; biarkan kosong = kotak SSP kosong)
-  alamatWP : 'Jl. Kapitan Pattimura, Suprau, Kota Sorong',
+  alamatWP : 'Jalan Kapitan Pattimura, Tanjung Kasuari - Suprau, Kota Sorong',
   // Identitas WP pada SSP (instansi)
   namaWpPajak  : 'POLITEKNIK KELAUTAN DAN PERIKANAN SORONG',
-  alamatWpPajak: 'JALAN KAPITAN PATTIMURA, SUPRAU',
+  alamatWpPajak: 'JALAN KAPITAN PATTIMURA, TANJUNG KASUARI - SUPRAU, KOTA SORONG',
   ppk         : 'Firdaus Dabamona, S.T.',
   nipPpk      : '198201032007011002',
   bendahara   : 'Abdul Rauf Muhammad Saleh',
@@ -819,13 +819,13 @@ var INST = {
   kementerian: 'KEMENTERIAN KELAUTAN DAN PERIKANAN',
   eselon1    : 'BADAN PENYULUHAN DAN PENGEMBANGAN SUMBER DAYA MANUSIA KELAUTAN DAN PERIKANAN',
   satker     : 'POLITEKNIK KELAUTAN DAN PERIKANAN SORONG',
-  kopAlamat  : 'Jalan Kapitan Pattimura, Kelurahan Malaingkedi, Distrik Sorong Utara, Kota Sorong, Papua Barat Daya',
-  kopTelp    : '(0951) 321039',
+  kopAlamat  : 'Jalan Kapitan Pattimura, Tanjung Kasuari - Suprau, Kota Sorong, Papua Barat Daya',
+  kopTelp    : '',
   kopFaks    : '',
   kopLaman   : 'www.polikpsorong.ac.id',
-  kopSurel   : '',
-  kopPos     : '',
-  logoGaruda : '',   // URL logo Garuda/KKP untuk kop Surat Tugas (opsional)
+  kopSurel   : 'polteksorong@kkp.go.id',
+  kopPos     : '118',
+  logoGaruda : 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg/200px-Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg.png',
   // Penanda tangan Surat Tugas (default Direktur) — isi NIP kemudian
   direktur       : 'Daniel Heintje Ndahawali',
   nipDirektur    : '',
@@ -2167,8 +2167,8 @@ function _docCss(){
   +'.ttl{text-align:center;font-weight:bold;min-height:32px} .nm{margin-top:54px} .nmc{margin-top:60px;font-weight:bold}'
   +'.terb{background:#dcdcdc;font-style:italic;padding:7px 9px;border:1px solid #000;border-top:0}'
   // Kop resmi & layout Surat Tugas
-  +'table.kopr{width:100%;border-collapse:collapse} .kopr .koplogo{width:90px;text-align:center;vertical-align:middle} .kopr .koplogo img{width:80px}'
-  +'.kopr .kopt{text-align:center;vertical-align:middle} .k1{font-size:12px} .k2{font-size:13px;font-weight:bold} .k3{font-size:16px;font-weight:bold} .kal{font-size:9px;line-height:1.35}'
+  +'table.kopr{width:100%;border-collapse:collapse} .kopr .koplogo{width:100px;text-align:center;vertical-align:middle;padding-right:8px} .kopr .koplogo img{width:88px;height:auto}'
+  +'.kopr .kopt{text-align:center;vertical-align:middle} .k1{font-size:11px;font-weight:normal} .k2{font-size:12px;font-weight:bold} .k3{font-size:15px;font-weight:bold} .k4{font-size:16px;font-weight:bold;text-transform:uppercase} .kal{font-size:9px;line-height:1.5}'
   +'hr.hrt2{border:0;border-top:3px double #000;margin:3px 0 14px}'
   +'table.st{width:100%;border-collapse:collapse;margin:2px 0} table.st>tbody>tr>td{vertical-align:top;padding:2px 0} td.lblst{width:92px} td.sep{width:12px}'
   +'ol.num{margin:0;padding-left:20px} ol.num li{margin-bottom:4px} ol.kepada li{margin-bottom:8px} ol.kepada .sub{font-size:11px;color:#333}'
@@ -2176,9 +2176,15 @@ function _docCss(){
   +'.noprint{text-align:right;margin:8px 15mm 0}@media print{.noprint{display:none}}';
 }
 function _docKop(){
-  return '<div class="kop">'+esc(INST.namaWP).toUpperCase()+'</div>'
-   +'<div class="kopad">'+esc(INST.alamatKop1)+'</div>'
-   +'<div class="kopad">'+esc(INST.alamatKop2)+'</div><hr class="hrt">';
+  return '<table class="kopr"><tr>'
+    +(INST.logoGaruda?('<td class="koplogo"><img src="'+esc(INST.logoGaruda)+'"></td>'):'')
+    +'<td class="kopt">'
+      +(INST.kementerian?('<div class="k1">'+esc(INST.kementerian)+'</div>'):'')
+      +(INST.eselon1?('<div class="k2">'+esc(INST.eselon1)+'</div>'):'')
+      +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
+      +'<div class="kal" style="margin-top:3px">'+esc(INST.alamatKop1)+'</div>'
+      +'<div class="kal">'+esc(INST.alamatKop2)+'</div>'
+    +'</td></tr></table><hr class="hrt">';
 }
 /* Kop resmi bertingkat (Kementerian → Badan → Satker + kontak) untuk Surat Tugas */
 function _docKopResmi(){
@@ -2193,9 +2199,9 @@ function _docKopResmi(){
     +'<td class="kopt">'
       +(INST.kementerian?('<div class="k1">'+esc(INST.kementerian)+'</div>'):'')
       +(INST.eselon1?('<div class="k2">'+esc(INST.eselon1)+'</div>'):'')
-      +'<div class="k3">'+esc(INST.satker||INST.namaWP).toUpperCase()+'</div>'
-      +'<div class="kal">'+alamat+'</div>'
-      +(contact.length?('<div class="kal">'+contact.join(' &middot; ')+'</div>'):'')
+      +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
+      +'<div class="kal" style="margin-top:3px">'+alamat+'</div>'
+      +(contact.length?('<div class="kal">'+contact.join(' &ensp; ')+'</div>'):'')
     +'</td></tr></table><hr class="hrt2">';
 }
 function _docWrap(title, pages){
@@ -3567,9 +3573,15 @@ function _renderKuitansiPajakHtml(t, pj, wp){
 
   var body=''
   +'<div class="page">'
-  +'<div class="kop"><div class="nm">'+esc(INST.namaWP).toUpperCase()+'</div>'
-  +'<div class="ad">'+esc(INST.alamatKop1)+'</div>'
-  +'<div class="ad">'+esc(INST.alamatKop2)+'</div></div>'
+  +'<table class="kopr"><tr>'
+  +(INST.logoGaruda?'<td class="koplogo"><img src="'+esc(INST.logoGaruda)+'"></td>':'')
+  +'<td class="kopt">'
+  +(INST.kementerian?'<div class="k1">'+esc(INST.kementerian)+'</div>':'')
+  +(INST.eselon1?'<div class="k2">'+esc(INST.eselon1)+'</div>':'')
+  +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
+  +'<div class="kal" style="margin-top:3px">'+esc(INST.alamatKop1)+'</div>'
+  +'<div class="kal">'+esc(INST.alamatKop2)+'</div>'
+  +'</td></tr></table>'
   +'<hr class="hrt">'
   +'<div class="judul">KUITANSI PEMOTONGAN PAJAK</div>'
   +'<div class="nomor">Nomor: '+esc(noKwt)+'</div>'
@@ -3926,9 +3938,15 @@ function _kuitansiCss(){
 function _kuitansiPage(t, o){
   return ''
   +'<div class="page">'
-  +'<div class="kop"><div class="nm">'+esc(INST.namaWP).toUpperCase()+'</div>'
-  +'<div class="ad">'+esc(INST.alamatKop1)+'</div>'
-  +'<div class="ad">'+esc(INST.alamatKop2)+'</div></div>'
+  +'<table class="kopr"><tr>'
+  +(INST.logoGaruda?'<td class="koplogo"><img src="'+esc(INST.logoGaruda)+'"></td>':'')
+  +'<td class="kopt">'
+  +(INST.kementerian?'<div class="k1">'+esc(INST.kementerian)+'</div>':'')
+  +(INST.eselon1?'<div class="k2">'+esc(INST.eselon1)+'</div>':'')
+  +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
+  +'<div class="kal" style="margin-top:3px">'+esc(INST.alamatKop1)+'</div>'
+  +'<div class="kal">'+esc(INST.alamatKop2)+'</div>'
+  +'</td></tr></table>'
   +'<hr class="hrt">'
 
   +'<div class="judul" style="letter-spacing:'+((o.judul&&o.judul.length>12)?'3px':'6px')+'">'+esc(o.judul||'K U I T A N S I')+'</div>'
