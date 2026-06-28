@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kas Tunai — Poltek KP Sorong</title>
+<!--
+  Halaman ini hanya MENGALIHKAN ke aplikasi Kas Tunai yang sebenarnya (Google Apps Script).
+  Bila suatu saat dibuat DEPLOYMENT BARU di Apps Script, ganti URL di bawah ini (var APP_URL)
+  dengan URL /exec yang baru, lalu commit & push.
+-->
+<script>
+  var APP_URL = "https://script.google.com/macros/s/AKfycbye24yskdQ-NvEpBLVfhATRxBzeE-Vq6VcDUlG_0n9EoN8P9vswtYSVApxJTvaLQgI/exec";
+  // Alihkan secepatnya (ganti history agar tombol Back tidak terjebak di halaman ini).
+  try { window.location.replace(APP_URL); } catch (e) { window.location.href = APP_URL; }
+</script>
+<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbye24yskdQ-NvEpBLVfhATRxBzeE-Vq6VcDUlG_0n9EoN8P9vswtYSVApxJTvaLQgI/exec">
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#0d3b66;color:#fff;display:flex;
+    min-height:100vh;margin:0;align-items:center;justify-content:center;text-align:center;padding:24px}
+  .card{max-width:460px}
+  .logo{font-size:40px}
+  h1{font-size:20px;margin:10px 0 4px}
+  p{opacity:.9;line-height:1.5}
+  a.btn{display:inline-block;margin-top:14px;background:#fff;color:#0d3b66;text-decoration:none;
+    font-weight:700;padding:10px 18px;border-radius:8px}
+  small{display:block;margin-top:18px;opacity:.6;word-break:break-all}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">&#128176;</div>
+    <h1>Kas Tunai — Poltek KP Sorong</h1>
+    <p>Mengalihkan ke aplikasi&hellip; Jika tidak otomatis berpindah dalam beberapa detik,
+       klik tombol di bawah.</p>
+    <a class="btn" id="lnk" href="https://script.google.com/macros/s/AKfycbye24yskdQ-NvEpBLVfhATRxBzeE-Vq6VcDUlG_0n9EoN8P9vswtYSVApxJTvaLQgI/exec">Buka Aplikasi Kas Tunai</a>
+    <small>Catatan: aplikasi berjalan di Google Apps Script dan memerlukan login akun
+       <b>@polikpsorong.ac.id</b>.</small>
+  </div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Abaikan semuanya...
+**/**
+
+# ...kecuali sumber proyek Apps Script yang boleh diunggah
+!appsscript.json
+!**/*.gs
+!/index.html
+
+# Halaman redirect GitHub Pages — JANGAN diunggah ke Apps Script
+docs/**

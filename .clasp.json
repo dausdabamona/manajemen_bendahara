@@ -1,0 +1,23 @@
+{
+  "scriptId": "1-qs-OtGNuxNwgz0bdFdoq7YWfiL68yiIS7iHtW4KsqQFrBWPBU5blXeh",
+  "rootDir": ".",
+  "filePushOrder": [
+    "_Config.gs",
+    "Util.gs",
+    "SheetRepository.gs",
+    "Settings.gs",
+    "SoftDelete.gs",
+    "TxnHelper.gs",
+    "DriveHelper.gs",
+    "KasTunai.gs",
+    "FotoNota.gs",
+    "Pengembalian.gs",
+    "MasterPenyedia.gs",
+    "SuratTugas.gs",
+    "BuktiPD.gs",
+    "Users.gs",
+    "ScanInbox.gs",
+    "DetailNota.gs",
+    "Code.gs"
+  ]
+}
