@@ -621,6 +621,7 @@
     </div>
     <div id="bkDropZone" class="dz-zone"
          onclick="document.getElementById('bkFile').click()"
+         ondragenter="event.preventDefault();this.classList.add('dz-over')"
          ondragover="event.preventDefault();this.classList.add('dz-over')"
          ondragleave="this.classList.remove('dz-over')"
          ondrop="_bkDrop(event)">
@@ -3810,7 +3811,16 @@ var _bkPendingFiles=[];
 function _bkDrop(e){
   e.preventDefault();
   document.getElementById('bkDropZone').classList.remove('dz-over');
-  _bkAddFiles(e.dataTransfer.files);
+  var dt=e.dataTransfer, fileList=[];
+  if(dt.items&&dt.items.length){
+    for(var i=0;i<dt.items.length;i++){
+      if(dt.items[i].kind==='file'){ var f=dt.items[i].getAsFile(); if(f) fileList.push(f); }
+    }
+  } else if(dt.files&&dt.files.length){
+    for(var i=0;i<dt.files.length;i++) fileList.push(dt.files[i]);
+  }
+  if(fileList.length) _bkAddFiles(fileList);
+  else toast('Tidak ada file yang dapat dibaca','error');
 }
 function _bkAddFiles(files){
   for(var i=0;i<files.length;i++) _bkPendingFiles.push(files[i]);
