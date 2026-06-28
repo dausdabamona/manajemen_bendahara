@@ -2150,6 +2150,39 @@ function cetakBuktiTransferPd(no){
     .serverGetSuratTugas(no);
 }
 /* CSS bersama semua dokumen cetak PD */
+/* ===== Kop Surat Resmi — dipakai di semua dokumen cetak ===== */
+function _kopCss(){
+  return 'table.kop-tbl{width:100%;border-collapse:collapse;margin-bottom:0}'
+    +'.kop-logo{width:110px;text-align:center;vertical-align:middle;padding-right:8px}'
+    +'.kop-logo img{width:100px;height:auto}'
+    +'.kop-txt{text-align:center;vertical-align:middle}'
+    +'.kop-k1{font-size:13px;font-weight:bold;color:#1a3a6b;line-height:1.5}'
+    +'.kop-k2{font-size:13px;font-weight:bold;color:#1a3a6b;line-height:1.5}'
+    +'.kop-k3{font-size:16px;font-weight:bold;color:#1a3a6b;line-height:1.5}'
+    +'.kop-addr{font-size:10px;color:#000;line-height:1.8;margin-top:4px}'
+    +'.kop-link{color:#1155cc;text-decoration:underline}'
+    +'.kop-hr1{border:0;border-top:3px solid #000;margin:4px 0 1px}'
+    +'.kop-hr2{border:0;border-top:1px solid #000;margin:0 0 10px}';
+}
+function _kopHtml(){
+  var LOGO_KKP = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg/200px-Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg.png';
+  return '<table class="kop-tbl"><tr>'
+    +'<td class="kop-logo"><img src="'+LOGO_KKP+'"></td>'
+    +'<td class="kop-txt">'
+    +'<div class="kop-k1">KEMENTERIAN KELAUTAN DAN PERIKANAN</div>'
+    +'<div class="kop-k2">BADAN PENYULUHAN DAN PENGEMBANGAN</div>'
+    +'<div class="kop-k2">SUMBER DAYA MANUSIA KELAUTAN DAN PERIKANAN</div>'
+    +'<div class="kop-k3">POLITEKNIK KELAUTAN DAN PERIKANAN SORONG</div>'
+    +'<div class="kop-addr">'
+    +'JALAN KAPITAN PATTIMURA, TANJUNG KASUARI - SUPRAU<br>'
+    +'KOTAK POS 118 KOTA SORONG, PAPUA BARAT DAYA 98411<br>'
+    +'LAMAN <span class="kop-link">www.polikpsorong.ac.id</span>'
+    +' &nbsp; SUREL <span class="kop-link">polteksorong@kkp.go.id</span>'
+    +'</div>'
+    +'</td></tr></table>'
+    +'<hr class="kop-hr1"><hr class="kop-hr2">';
+}
+
 function _docCss(){
   return '@page{size:A4 portrait;margin:0} *{font-family:Arial,sans-serif;box-sizing:border-box}'
   +'body{font-size:12px;color:#000;margin:0}'
@@ -2173,37 +2206,12 @@ function _docCss(){
   +'table.st{width:100%;border-collapse:collapse;margin:2px 0} table.st>tbody>tr>td{vertical-align:top;padding:2px 0} td.lblst{width:92px} td.sep{width:12px}'
   +'ol.num{margin:0;padding-left:20px} ol.num li{margin-bottom:4px} ol.kepada li{margin-bottom:8px} ol.kepada .sub{font-size:11px;color:#333}'
   +'.grat{margin-top:26px;font-style:italic;font-size:10px;border-top:1px solid #999;padding-top:4px}'
-  +'.noprint{text-align:right;margin:8px 15mm 0}@media print{.noprint{display:none}}';
+  +'.noprint{text-align:right;margin:8px 15mm 0}@media print{.noprint{display:none}}'
+  +_kopCss();
 }
-function _docKop(){
-  return '<table class="kopr"><tr>'
-    +(INST.logoGaruda?('<td class="koplogo"><img src="'+esc(INST.logoGaruda)+'"></td>'):'')
-    +'<td class="kopt">'
-      +(INST.kementerian?('<div class="k1">'+esc(INST.kementerian)+'</div>'):'')
-      +(INST.eselon1?('<div class="k2">'+esc(INST.eselon1)+'</div>'):'')
-      +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
-      +'<div class="kal" style="margin-top:3px">'+esc(INST.alamatKop1)+'</div>'
-      +'<div class="kal">'+esc(INST.alamatKop2)+'</div>'
-    +'</td></tr></table><hr class="hrt">';
-}
+function _docKop(){ return _kopHtml(); }
 /* Kop resmi bertingkat (Kementerian → Badan → Satker + kontak) untuk Surat Tugas */
-function _docKopResmi(){
-  var contact=[];
-  if(INST.kopTelp) contact.push('Telepon '+esc(INST.kopTelp));
-  if(INST.kopFaks) contact.push('Faksimile '+esc(INST.kopFaks));
-  if(INST.kopLaman) contact.push('Laman '+esc(INST.kopLaman));
-  if(INST.kopSurel) contact.push('Surel '+esc(INST.kopSurel));
-  var alamat=esc(INST.kopAlamat||(INST.alamatKop1+', '+INST.alamatKop2))+(INST.kopPos?(' Kotak Pos '+esc(INST.kopPos)):'');
-  return '<table class="kopr"><tr>'
-    +(INST.logoGaruda?('<td class="koplogo"><img src="'+esc(INST.logoGaruda)+'"></td>'):'')
-    +'<td class="kopt">'
-      +(INST.kementerian?('<div class="k1">'+esc(INST.kementerian)+'</div>'):'')
-      +(INST.eselon1?('<div class="k2">'+esc(INST.eselon1)+'</div>'):'')
-      +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
-      +'<div class="kal" style="margin-top:3px">'+alamat+'</div>'
-      +(contact.length?('<div class="kal">'+contact.join(' &ensp; ')+'</div>'):'')
-    +'</td></tr></table><hr class="hrt2">';
-}
+function _docKopResmi(){ return _kopHtml(); }
 function _docWrap(title, pages){
   return '<html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+_docCss()+'</style></head><body>'
    +'<div class="noprint"><button onclick="window.print()">Cetak / Simpan PDF</button></div>'+pages+'</body></html>';
@@ -3573,16 +3581,7 @@ function _renderKuitansiPajakHtml(t, pj, wp){
 
   var body=''
   +'<div class="page">'
-  +'<table class="kopr"><tr>'
-  +(INST.logoGaruda?'<td class="koplogo"><img src="'+esc(INST.logoGaruda)+'"></td>':'')
-  +'<td class="kopt">'
-  +(INST.kementerian?'<div class="k1">'+esc(INST.kementerian)+'</div>':'')
-  +(INST.eselon1?'<div class="k2">'+esc(INST.eselon1)+'</div>':'')
-  +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
-  +'<div class="kal" style="margin-top:3px">'+esc(INST.alamatKop1)+'</div>'
-  +'<div class="kal">'+esc(INST.alamatKop2)+'</div>'
-  +'</td></tr></table>'
-  +'<hr class="hrt">'
+  +_kopHtml()
   +'<div class="judul">KUITANSI PEMOTONGAN PAJAK</div>'
   +'<div class="nomor">Nomor: '+esc(noKwt)+'</div>'
 
@@ -3933,21 +3932,13 @@ function _kuitansiCss(){
   +'.sig{width:100%;border-collapse:collapse;margin-top:18px;font-size:12px;text-align:center}'
   +'.sig td{width:33.33%;padding:6px 8px;vertical-align:top}'
   +'.sig .nm{margin-top:54px;font-weight:bold} .sig .nip{font-size:11px}'
-  +'@media print{.noprint{display:none}}';
+  +'@media print{.noprint{display:none}}'
+  +_kopCss();
 }
 function _kuitansiPage(t, o){
   return ''
   +'<div class="page">'
-  +'<table class="kopr"><tr>'
-  +(INST.logoGaruda?'<td class="koplogo"><img src="'+esc(INST.logoGaruda)+'"></td>':'')
-  +'<td class="kopt">'
-  +(INST.kementerian?'<div class="k1">'+esc(INST.kementerian)+'</div>':'')
-  +(INST.eselon1?'<div class="k2">'+esc(INST.eselon1)+'</div>':'')
-  +'<div class="k4">'+esc(INST.satker||INST.namaWP)+'</div>'
-  +'<div class="kal" style="margin-top:3px">'+esc(INST.alamatKop1)+'</div>'
-  +'<div class="kal">'+esc(INST.alamatKop2)+'</div>'
-  +'</td></tr></table>'
-  +'<hr class="hrt">'
+  +_kopHtml()
 
   +'<div class="judul" style="letter-spacing:'+((o.judul&&o.judul.length>12)?'3px':'6px')+'">'+esc(o.judul||'K U I T A N S I')+'</div>'
   +'<div class="nomor">Nomor: '+o.noKwt+'</div>'
