@@ -3493,20 +3493,24 @@ function simpanPajakModal(){
     document.getElementById('pjTermasukPPN').checked,
     document.getElementById('pjAdaNpwp').checked, _pjSelectedRef()));
   var katIdx=parseInt((document.getElementById('pjKategoriSel')||{}).value,10);
+  var namaPenyedia=(document.getElementById('pjPenyedia')||{value:''}).value.trim();
+  var npwpPenyedia=(document.getElementById('pjNpwpPenyedia')||{value:''}).value.trim();
   showLoading(true,'Menyimpan pajak...');
   google.script.run
     .withSuccessHandler(function(){
       showLoading(false); toast('Pajak tersimpan'); closeModal('modalPajak'); loadAll();
     })
     .withFailureHandler(function(e){ showLoading(false); fail(e.message||String(e)); })
-    .serverSimpanPajak(no, {katIdx:katIdx, pph:pj.pph, ppn:pj.ppn, dpp:pj.dpp});
+    .serverSimpanPajak(no, {katIdx:katIdx, pph:pj.pph, ppn:pj.ppn, dpp:pj.dpp,
+      namaPenyedia:namaPenyedia, npwpPenyedia:npwpPenyedia});
 }
 
 function cetakKuitansiPajak(no){
   var t=_cariTransaksi(no); if(!t){ toast('Transaksi tidak ditemukan','error'); return; }
   var pj=_cardPajak(t);
   if(!pj||pj.totalPajak<=0){ toast('Tidak ada pajak untuk transaksi ini','info'); return; }
-  _bukaPopup(_renderKuitansiPajakHtml(t, pj));
+  var wp={nama: t.pajakNamaPenyedia||'', npwp: t.pajakNpwpPenyedia||''};
+  _bukaPopup(_renderKuitansiPajakHtml(t, pj, wp));
 }
 
 function cetakKuitansiPajakModal(){
@@ -3517,18 +3521,49 @@ function cetakKuitansiPajakModal(){
     document.getElementById('pjTermasukPPN').checked,
     document.getElementById('pjAdaNpwp').checked, _pjSelectedRef()));
   if(!pj||pj.totalPajak<=0){ toast('Jumlah pajak = 0, tidak ada yang dicetak','info'); return; }
-  _bukaPopup(_renderKuitansiPajakHtml(t, pj));
+  var wp={
+    nama:  (document.getElementById('pjPenyedia')||{value:''}).value.trim(),
+    npwp:  (document.getElementById('pjNpwpPenyedia')||{value:''}).value.trim()
+  };
+  _bukaPopup(_renderKuitansiPajakHtml(t, pj, wp));
 }
 
-function _renderKuitansiPajakHtml(t, pj){
-  var thn=new Date().getFullYear();
+function _renderKuitansiPajakHtml(t, pj, wp){
+  wp=wp||{};
+  var thn=(t.tanggal||'').split('-')[0]||new Date().getFullYear();
   var noKwt='KP-'+t.no+'/'+thn;
   var netto=pj.nettoRekanan;
+  var namaPenyedia=wp.nama||'(…………………………………………………)';
+  var npwpPenyedia=wp.npwp||'';
   var baris=function(l,v){ return '<tr><td class="l">'+l+'</td><td class="c">:</td><td>'+v+'</td></tr>'; };
+
   var css=_kuitansiCss()
-    +'.kp-sec{margin-top:10px} .kp-head{font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:6px;font-size:13px}'
-    +'.kp-total td{font-weight:bold;background:#f0f0f0} .kp-netto td{font-weight:bold;font-size:15px}';
-  var penyedia=t.penjab||'(…………………………)';
+    +'.kp-sec{margin-top:12px}'
+    +'.kp-head{font-weight:bold;background:#16456e;color:#fff;padding:5px 8px;font-size:12px;border-radius:4px 4px 0 0;margin-bottom:0}'
+    +'.kp-tbl{width:100%;border-collapse:collapse;margin-bottom:0}'
+    +'.kp-tbl td{padding:5px 8px;border:1px solid #d1d5db;font-size:12px;vertical-align:top}'
+    +'.kp-tbl td.lbl{width:48%;color:#374151;background:#f9fafb}'
+    +'.kp-tbl td.val{font-weight:600}'
+    +'.kp-tbl tr.sub td{background:#fffbeb}'
+    +'.kp-tbl tr.total td{font-weight:bold;background:#e5edff;font-size:13px}'
+    +'.kp-tbl tr.netto td{font-weight:bold;background:#dcfce7;font-size:14px;color:#15803d}'
+    +'.kp-tbl tr.terbilang td{font-style:italic;background:#f0fdf4;font-size:11px;color:#166534}'
+    +'.kp-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold}'
+    +'.badge-pph{background:#dbeafe;color:#1d4ed8}'
+    +'.badge-ppn{background:#fef3c7;color:#92400e}'
+    +'.badge-nil{background:#f3f4f6;color:#6b7280}'
+    +'.info-penyedia{background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:8px 12px;margin:10px 0;font-size:12px}'
+    +'.info-penyedia .nm{font-weight:bold;font-size:13px}'
+    +'.info-penyedia .nw{color:#0369a1;font-size:11px;margin-top:2px}'
+    +'.catatan-pajak{font-size:11px;color:#6b7280;margin-top:6px;padding:4px 8px;border-left:3px solid #d1d5db}';
+
+  var badgePph=pj.pph>0
+    ?'<span class="kp-badge badge-pph">'+esc(pj.jenisPPh||'PPh')+(pj.tarifPPhPct?' '+pj.tarifPPhPct+'%':'')
+      +(pj.nonNpwp?' ×2 non-NPWP':'')+'</span>'
+    :'<span class="kp-badge badge-nil">Tidak dipungut</span>';
+  var badgePpn=pj.ppn>0
+    ?'<span class="kp-badge badge-ppn">PPN 11%</span>'
+    :'<span class="kp-badge badge-nil">Tidak dipungut</span>';
 
   var body=''
   +'<div class="page">'
@@ -3539,29 +3574,56 @@ function _renderKuitansiPajakHtml(t, pj){
   +'<div class="judul">KUITANSI PEMOTONGAN PAJAK</div>'
   +'<div class="nomor">Nomor: '+esc(noKwt)+'</div>'
 
-  +'<table class="b">'
-  +baris('Kegiatan / Uraian', esc(t.kegiatan))
-  +baris('Penyedia / Penerima', esc(penyedia))
-  +baris('Tanggal', esc(_tglPanjang(t.tanggal)))
+  +'<table class="b" style="margin-bottom:4px">'
+  +baris('Kegiatan / Uraian', '<b>'+esc(t.kegiatan)+'</b>')
+  +baris('Tanggal Transaksi', esc(_tglPanjang(t.tanggal)))
   +'</table>'
 
-  +'<div class="kp-sec"><div class="kp-head">Rincian Pemotongan Pajak</div>'
-  +'<table class="b">'
-  +baris('Nilai Kontrak / Nota', '<b>'+rupiah(pj.nominal)+'</b>')
-  +baris('DPP (Dasar Pengenaan Pajak)', rupiah(pj.dpp)+(pj.kenaPPN&&pj.termasukPPN?' <span style="font-size:11px;color:#555">(= nilai ÷ 1,11)</span>':''))
-  +(pj.pph>0?baris(esc(pj.jenisPPh||'PPh')+(pj.tarifPPhPct?' ('+pj.tarifPPhPct+'%)':'')+(pj.nonNpwp?' <i>(non-NPWP ×2)</i>':''), '<b>'+rupiah(pj.pph)+'</b>'):'')
-  +(pj.ppn>0?baris('PPN (11% × DPP)', '<b>'+rupiah(pj.ppn)+'</b>'):'')
-  +'<tr class="kp-total"><td class="l">Total Pemotongan Pajak</td><td class="c">:</td><td>'+rupiah(pj.totalPajak)+'</td></tr>'
-  +'<tr class="kp-netto"><td class="l">Netto Dibayarkan ke Rekanan</td><td class="c">:</td><td>'+rupiah(netto)+'</td></tr>'
-  +'<tr><td colspan="3" class="terb">Terbilang : <i>'+_terbilangTitle(netto)+'</i></td></tr>'
+  +'<div class="info-penyedia">'
+  +'<div style="font-size:11px;color:#0369a1;margin-bottom:2px">&#128100; Penyedia / Wajib Pajak</div>'
+  +'<div class="nm">'+esc(namaPenyedia)+'</div>'
+  +(npwpPenyedia?'<div class="nw">NPWP : '+esc(npwpPenyedia)+'</div>':'<div class="nw" style="color:#dc2626">NPWP : — (Non-NPWP, tarif PPh berlipat 2)</div>')
+  +'</div>'
+
+  +'<div class="kp-sec">'
+  +'<div class="kp-head">&#128181; Rincian Perhitungan Pajak</div>'
+  +'<table class="kp-tbl">'
+  +'<tr><td class="lbl">Nilai Bruto (Kontrak / Nota)</td><td class="val">'+rupiah(pj.nominal)+'</td></tr>'
+  +'<tr class="sub"><td class="lbl">DPP – Dasar Pengenaan Pajak'
+    +(pj.kenaPPN&&pj.termasukPPN?' <span style="font-size:10px;font-weight:normal">(nilai ÷ 1,11)</span>':'')
+    +'</td><td class="val">'+rupiah(pj.dpp)+'</td></tr>'
+
+  +'<tr><td class="lbl">PPh yang Dipotong '+badgePph+'</td>'
+    +'<td class="val">'+(pj.pph>0?('<b style="color:#1d4ed8">'+rupiah(pj.pph)+'</b>'):'<span style="color:#9ca3af">Rp 0</span>')+'</td></tr>'
+
+  +(pj.pph>0?('<tr class="sub"><td class="lbl" style="padding-left:20px;font-size:11px;color:#6b7280">'
+    +'Perhitungan: '+rupiah(pj.dpp)+' × '+pj.tarifPPhPct+'%'+(pj.nonNpwp?' × 2 (non-NPWP)':'')
+    +'</td><td class="val" style="font-size:11px;color:#6b7280">= '+rupiah(pj.pph)+'</td></tr>'):'')
+
+  +'<tr><td class="lbl">PPN yang Dipungut '+badgePpn+'</td>'
+    +'<td class="val">'+(pj.ppn>0?('<b style="color:#92400e">'+rupiah(pj.ppn)+'</b>'):'<span style="color:#9ca3af">Rp 0</span>')+'</td></tr>'
+
+  +(pj.ppn>0?('<tr class="sub"><td class="lbl" style="padding-left:20px;font-size:11px;color:#6b7280">'
+    +'Perhitungan: '+rupiah(pj.dpp)+' × 11%'
+    +'</td><td class="val" style="font-size:11px;color:#6b7280">= '+rupiah(pj.ppn)+'</td></tr>'):'')
+
+  +'<tr class="total"><td class="lbl">Total Pajak Dipotong / Dipungut</td><td class="val">'+rupiah(pj.totalPajak)+'</td></tr>'
+  +'<tr class="netto"><td class="lbl">Netto Dibayarkan ke Penyedia</td><td class="val">'+rupiah(netto)+'</td></tr>'
+  +'<tr class="terbilang"><td colspan="2">Terbilang : <i>'+_terbilangTitle(netto)+'</i></td></tr>'
   +'</table></div>'
 
-  +(pj.mapPPh?'<div class="tgl" style="margin-top:8px">MAP / KJS PPh : <b>'+esc(pj.mapPPh)+' / '+esc(pj.kjsPPh)+'</b></div>':'')
+  +(pj.mapPPh||pj.ppn>0?
+    '<div class="catatan-pajak">'
+    +(pj.pph>0?'MAP/KJS PPh : <b>'+esc(pj.mapPPh)+' / '+esc(pj.kjsPPh)+'</b>':'')
+    +(pj.pph>0&&pj.ppn>0?' &nbsp;|&nbsp; ':'')
+    +(pj.ppn>0?'MAP/KJS PPN : <b>411211 / 900</b>':'')
+    +'</div>':'')
 
   +'<table class="sig"><tr>'
-  +'<td>Rekanan / Penerima,<br>'+esc(INST.kota)+', '+_tglPanjang(t.tanggal)+'<div class="nm">'+esc(penyedia)+'</div></td>'
+  +'<td>Penyedia / Penerima,<br>'+esc(INST.kota)+', '+_tglPanjang(t.tanggal)+'<div class="nm">'+esc(namaPenyedia)+'</div>'
+    +(npwpPenyedia?'<span class="nip">NPWP '+esc(npwpPenyedia)+'</span>':'')+'</td>'
   +'<td>Bendahara Pengeluaran,<br>&nbsp;<div class="nm">'+esc(INST.bendahara||'')+'</div><span class="nip">NIP. '+esc(INST.nipBendahara||'')+'</span></td>'
-  +'<td>Mengetahui,<br>PPK Poltek KP Sorong<div class="nm">'+esc(INST.ppk||'')+'</div><span class="nip">NIP. '+esc(INST.nipPpk||'')+'</span></td>'
+  +'<td>Mengetahui,<br>PPK '+esc(INST.namaWP||'Poltek KP Sorong')+'<div class="nm">'+esc(INST.ppk||'')+'</div><span class="nip">NIP. '+esc(INST.nipPpk||'')+'</span></td>'
   +'</tr></table>'
   +'</div>';
 

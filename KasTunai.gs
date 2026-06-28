@@ -45,9 +45,11 @@ var KasTunai = (function () {
       akun:            row[C.AKUN] || '',
       persediaan:      String(row[C.PERSEDIAAN]||'').toUpperCase()==='Y',
       pajakKatIdx:     (row[C.PAJAK_KATEGORI_IDX] !== '' && row[C.PAJAK_KATEGORI_IDX] != null) ? Util.num(row[C.PAJAK_KATEGORI_IDX]) : null,
-      pajakPph:        Util.num(row[C.PAJAK_PPH]),
-      pajakPpn:        Util.num(row[C.PAJAK_PPN]),
-      pajakDpp:        Util.num(row[C.PAJAK_DPP])
+      pajakPph:           Util.num(row[C.PAJAK_PPH]),
+      pajakPpn:           Util.num(row[C.PAJAK_PPN]),
+      pajakDpp:           Util.num(row[C.PAJAK_DPP]),
+      pajakNamaPenyedia:  row[C.PAJAK_NAMA_PENYEDIA] || '',
+      pajakNpwpPenyedia:  row[C.PAJAK_NPWP_PENYEDIA] || ''
     };
   }
   /** true bila baris adalah pemindahan dana antar kas (Pindah Dana), bukan belanja riil. */
@@ -461,12 +463,14 @@ var KasTunai = (function () {
     SheetRepo.ensureMinCols(CONFIG.SHEETS.KAS_TUNAI, CONFIG.HEADERS.KAS_TUNAI.length);
     updateByTransactionId(no, Util.set(
       C.PAJAK_KATEGORI_IDX, (d.katIdx != null ? d.katIdx : ''),
-      C.PAJAK_PPH,          Util.num(d.pph),
-      C.PAJAK_PPN,          Util.num(d.ppn),
-      C.PAJAK_DPP,          Util.num(d.dpp)));
+      C.PAJAK_PPH,             Util.num(d.pph),
+      C.PAJAK_PPN,             Util.num(d.ppn),
+      C.PAJAK_DPP,             Util.num(d.dpp),
+      C.PAJAK_NAMA_PENYEDIA,   d.namaPenyedia || '',
+      C.PAJAK_NPWP_PENYEDIA,   d.npwpPenyedia || ''));
     DeferredFlush.mark();
     AuditLog.write('SIMPAN_PAJAK', CONFIG.SHEETS.KAS_TUNAI, no,
-      'katIdx=' + d.katIdx + ' pph=' + d.pph + ' ppn=' + d.ppn + ' dpp=' + d.dpp);
+      'katIdx=' + d.katIdx + ' pph=' + d.pph + ' ppn=' + d.ppn + ' dpp=' + d.dpp + ' penyedia=' + (d.namaPenyedia||''));
     return { success: true };
   }
 
