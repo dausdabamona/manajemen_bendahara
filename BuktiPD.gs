@@ -103,8 +103,22 @@ var BuktiPD = (function () {
     } catch (e) { return ''; }
   }
 
+  /** Kembalikan semua bukti aktif dengan dataUri penuh (gambar & PDF) — untuk cetak SPJ. */
+  function getBuktiForSpj(noTransaksi) {
+    var c = BC();
+    var rows = findRows(CONFIG.SHEETS.BUKTI_PD, function (r) {
+      return String(r[c.NO_TRANSAKSI]) === String(noTransaksi) && !isDeleted(r[c.IS_DELETED]);
+    });
+    return rows.map(function (x) {
+      var o = _toObj(c, x.values, false);
+      if (o.fileId) o.dataUri = _dataUri(o.fileId);
+      return o;
+    });
+  }
+
   return {
-    getBukti: getBukti, getJmlPerTransaksi: getJmlPerTransaksi,
+    getBukti: getBukti, getBuktiForSpj: getBuktiForSpj,
+    getJmlPerTransaksi: getJmlPerTransaksi,
     uploadBukti: uploadBukti, hapusBukti: hapusBukti, zipBukti: zipBukti
   };
 })();

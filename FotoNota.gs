@@ -141,7 +141,8 @@ var FotoNota = (function () {
         if (ff && !imgB64[ff]) imgB64[ff] = _imgDataUri(ff);
       }
     }
-    return { notas: nd.notas, fotoPerNota: nd.fotoPerNota, imgB64: imgB64 };
+    var buktiPD = BuktiPD.getBuktiForSpj(noTransaksi);
+    return { notas: nd.notas, fotoPerNota: nd.fotoPerNota, imgB64: imgB64, buktiPD: buktiPD };
   }
 
   /** Baca file Drive -> data URI base64; '' bila gagal (frontend fallback). */

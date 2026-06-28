@@ -1420,7 +1420,8 @@ function _cardHtml(t, mode){
       +'<button class="b-orange" onclick="openModalNota('+t.no+')">Kelola Nota</button>'
       +'<button class="b-gray" onclick="openFoto('+t.no+')">Foto</button>'
       +'<button class="b-purple" onclick="bukaModalKuitansi('+t.no+')">'+(t.sumber==='BANK'?'Bukti Transfer':'Tanda Terima')+'</button>'
-      +'<button class="b-spby" onclick="openModalSpby('+t.no+','+t.rowIndex+')">'+(t.noSpby?'SPBY &#10003;':'SPBY')+'</button>';
+      +'<button class="b-spby" onclick="openModalSpby('+t.no+','+t.rowIndex+')">'+(t.noSpby?'SPBY &#10003;':'SPBY')+'</button>'
+      +'<button class="b-gray" onclick="openModalBukti('+t.no+')">&#128206; Lampiran</button>';
     if(lunas) h+='<button class="b-dark" onclick="cetakSPJ('+t.no+')">Cetak SPJ</button>';
     h+='<button class="b-spd" onclick="konversiKePd('+t.no+')" title="Jadikan transaksi ini Perjalanan Dinas">&#9992; Jadikan PD</button>'
       +'<button onclick="openModalPecah('+t.no+')" title="Pecah jadi beberapa transaksi">&#9986; Pecah</button>';
@@ -1523,17 +1524,66 @@ function hapusSpbyTx(){
     .withFailureHandler(fail)
     .serverHapusSpby(_spRow);
 }
+function _renderLampiranSection(buktiPD){
+  if(!buktiPD||!buktiPD.length) return '';
+  var pdfItems=[], html='';
+  html+='<div class="sechead" style="margin-top:20px;page-break-before:always">&#128206; Lampiran Bukti Transaksi ('+buktiPD.length+' file)</div>';
+  for(var i=0;i<buktiPD.length;i++){
+    var b=buktiPD[i];
+    var label=esc(b.namaFile||('Lampiran '+(i+1)))+(b.jenisDok?' &mdash; <span style="color:#6b7280">'+esc(b.jenisDok)+'</span>':'');
+    html+='<div style="margin-bottom:18px;page-break-inside:avoid">';
+    html+='<div style="font-size:11px;font-weight:bold;color:#16456e;margin-bottom:4px">&#128196; '+label+'</div>';
+    if(b.isImg&&b.dataUri){
+      html+='<img src="'+b.dataUri+'" style="max-width:100%;height:auto;border:1px solid #e2e6ec;border-radius:6px;display:block">';
+    } else if(b.dataUri){
+      html+='<div id="pdf-canvas-'+i+'" style="width:100%"></div>';
+      pdfItems.push({id:'pdf-canvas-'+i, dataUri:b.dataUri});
+    } else {
+      html+='<div style="color:#9a3412;font-size:11px">File tidak dapat dimuat.</div>';
+    }
+    html+='</div>';
+  }
+  if(!pdfItems.length) return html;
+  var pdfDataJson=JSON.stringify(pdfItems.map(function(p){ return {id:p.id,dataUri:p.dataUri}; }));
+  html+='<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>'
+    +'<script>'
+    +'(function(){'
+    +'var PDFJS_WORKER="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";'
+    +'var items='+pdfDataJson+';'
+    +'function renderPdf(item){'
+    +'  pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;'
+    +'  return pdfjsLib.getDocument(item.dataUri).promise.then(function(pdf){'
+    +'    var chain=Promise.resolve();'
+    +'    for(var i=1;i<=pdf.numPages;i++)(function(pnum){'
+    +'      chain=chain.then(function(){ return pdf.getPage(pnum).then(function(page){'
+    +'        var vp=page.getViewport({scale:1.5});'
+    +'        var c=document.createElement("canvas");'
+    +'        c.width=vp.width; c.height=vp.height;'
+    +'        c.style.cssText="width:100%;margin-bottom:4px;display:block";'
+    +'        document.getElementById(item.id).appendChild(c);'
+    +'        return page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;'
+    +'      });});'
+    +'    })(i);'
+    +'    return chain;'
+    +'  });'
+    +'}'
+    +'var seq=Promise.resolve();'
+    +'items.forEach(function(it){seq=seq.then(function(){return renderPdf(it);});});'
+    +'})();'
+    +'<\/script>';
+  return html;
+}
 function cetakSPJ(no){
   var t=_cariTransaksi(no);
   if(!t){ toast('Transaksi tidak ditemukan','error'); return; }
   showLoading(true,'Menyiapkan SPJ & memuat foto...');
   google.script.run
     .withSuccessHandler(function(res){ showLoading(false);
-      _bukaPopup(_renderSpjHtml(t,(res&&res.notas)||[],(res&&res.fotoPerNota)||{},(res&&res.imgB64)||{})); })
+      _bukaPopup(_renderSpjHtml(t,(res&&res.notas)||[],(res&&res.fotoPerNota)||{},(res&&res.imgB64)||{},(res&&res.buktiPD)||[])); })
     .withFailureHandler(fail)
     .serverGetSpjData(no);
 }
-function _renderSpjHtml(t, notas, fotoPerNota, imgB64){
+function _renderSpjHtml(t, notas, fotoPerNota, imgB64, buktiPD){
   imgB64=imgB64||{};
   function srcOf(fileId){ return imgB64[fileId] || ('https://drive.google.com/thumbnail?id='+fileId+'&sz=w800'); }
   var thn=(String(t.tanggal||'').split('-')[0])||(''+new Date().getFullYear());
@@ -1647,6 +1697,7 @@ function _renderSpjHtml(t, notas, fotoPerNota, imgB64){
   +'<div class="total">Total Nota: '+rupiah(totalNota)
   +(dikembalikan>0?(' &nbsp;|&nbsp; Dikembalikan: '+rupiah(dikembalikan)+' &nbsp;|&nbsp; Total PJ: '+rupiah(totalNota+dikembalikan)):'')
   +'</div>'
+  +_renderLampiranSection(buktiPD||[])
   +'</body></html>';
 }
 
