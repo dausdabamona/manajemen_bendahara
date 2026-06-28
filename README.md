@@ -70,3 +70,4 @@ clasp pull
 
 - Engine pajak 19 kategori / 269 kata kunci (`PAJAK_REF` di `index.html` masih kosong).
 - Layout PDF SPJ PUM & SSP PPh/PPN (format F.2.0.32.01) — baru placeholder.
+# Auto-deploy aktif
