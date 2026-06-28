@@ -9,15 +9,43 @@
  * Entry point
  * ============================================================ */
 function doGet() {
+  var email = _safeEmail();
+
+  // Blokir akses bila belum terdaftar
+  if (!Users.isRegistered(email)) {
+    var deniedHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<title>Akses Ditolak</title>'
+      + '<style>*{box-sizing:border-box;font-family:Arial,sans-serif;margin:0}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f1f5f9}'
+      + '.card{background:#fff;border-radius:16px;padding:40px 32px;max-width:440px;width:90%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}'
+      + '.icon{font-size:56px;margin-bottom:16px}.title{font-size:22px;font-weight:bold;color:#1e293b;margin-bottom:8px}'
+      + '.sub{font-size:14px;color:#64748b;margin-bottom:20px;line-height:1.6}'
+      + '.email{background:#f1f5f9;border-radius:8px;padding:8px 14px;font-size:13px;color:#374151;display:inline-block;margin-bottom:20px}'
+      + '.note{font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px;margin-top:4px}'
+      + '</style></head><body>'
+      + '<div class="card">'
+      + '<div class="icon">&#128274;</div>'
+      + '<div class="title">Akses Ditolak</div>'
+      + '<div class="sub">Akun Anda belum terdaftar sebagai pengguna aplikasi ini.</div>'
+      + (email ? '<div class="email">&#128100; ' + email + '</div>' : '')
+      + '<div class="note">Hubungi Super Admin untuk mendapatkan akses.<br>Politeknik KP Sorong &mdash; Sistem Manajemen Bendahara</div>'
+      + '</div></body></html>';
+    return HtmlService.createHtmlOutput(deniedHtml)
+      .setTitle('Akses Ditolak')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
   var tpl = HtmlService.createTemplateFromFile('index');
   var role = _currentRole();
   var full = (role === 'admin' || role === 'full');
+  var isSA = email.toLowerCase() === String(CONFIG.SUPER_ADMIN || '').toLowerCase();
   tpl.appData = {
-    user:      _safeEmail(),
-    namaUser:  '',
-    roleUser:  role,
-    isAdmin:   (role === 'admin'),
-    saldoAwal: full ? CONFIG.SALDO_AWAL : 0
+    user:         email,
+    namaUser:     Users.getNama(email),
+    roleUser:     role,
+    isAdmin:      (role === 'admin'),
+    isSuperAdmin: isSA,
+    saldoAwal:    full ? CONFIG.SALDO_AWAL : 0
   };
   return tpl.evaluate()
     .setTitle('Kas Tunai - Poltek KP Sorong')
@@ -58,7 +86,15 @@ function _run(fn) {
  * Transaksi
  * ============================================================ */
 function serverGetTransaksi() {
-  return _run(function () { return KasTunai.getTransaksi(); });
+  return _run(function () {
+    var isSA = _safeEmail().toLowerCase() === String(CONFIG.SUPER_ADMIN||'').toLowerCase();
+    return KasTunai.getTransaksi(isSA);
+  });
+}
+function serverToggleHidden(no, hide) {
+  if (_safeEmail().toLowerCase() !== String(CONFIG.SUPER_ADMIN||'').toLowerCase())
+    throw new Error('Hanya Super Admin yang dapat menyembunyikan transaksi');
+  return _run(function () { return KasTunai.toggleHidden(no, hide); });
 }
 
 /** Muat data dashboard awal dalam satu round-trip: transaksi + jumlah foto + surat tugas. */

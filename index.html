@@ -198,6 +198,32 @@
 </head>
 <body>
 
+<!-- ================= HALAMAN SAMBUTAN ================= -->
+<div id="splashScreen" style="
+  position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#0f2d4a 0%,#16456e 55%,#1a3a6b 100%);
+  transition:opacity .4s ease,visibility .4s ease">
+  <div style="text-align:center;color:#fff;padding:24px;max-width:360px;width:90%">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg/200px-Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg.png"
+         style="width:90px;height:90px;object-fit:contain;margin-bottom:16px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))">
+    <div style="font-size:13px;opacity:.7;letter-spacing:.5px;margin-bottom:2px">POLITEKNIK KP SORONG</div>
+    <div style="font-size:20px;font-weight:bold;letter-spacing:.5px;margin-bottom:20px">Manajemen Bendahara</div>
+    <div style="background:rgba(255,255,255,.12);border-radius:14px;padding:16px 20px;margin-bottom:24px">
+      <div style="font-size:26px;margin-bottom:8px">&#128100;</div>
+      <div id="splashNama" style="font-size:16px;font-weight:bold;margin-bottom:4px"></div>
+      <div id="splashEmail" style="font-size:12px;opacity:.7;margin-bottom:10px;word-break:break-all"></div>
+      <div id="splashRole" style="display:inline-block;padding:3px 14px;border-radius:20px;font-size:12px;font-weight:bold;background:rgba(255,255,255,.2)"></div>
+    </div>
+    <button onclick="tutupSplash()" style="
+      background:#3b82f6;color:#fff;border:none;border-radius:10px;
+      padding:13px 40px;font-size:15px;font-weight:bold;cursor:pointer;
+      box-shadow:0 4px 14px rgba(59,130,246,.5);width:100%;letter-spacing:.3px">
+      Masuk ke Aplikasi &#8594;
+    </button>
+    <div style="margin-top:14px;font-size:11px;opacity:.4">Tekan tombol di atas untuk melanjutkan</div>
+  </div>
+</div>
+
 <header class="topbar">
   <div class="brand">&#128176; <span>Kas Tunai<small>Poltek KP Sorong &middot; <span id="userLabel"></span></small></span></div>
   <div class="saldo-pill"><div class="l">Saldo</div><div class="v" id="saldoPill">-</div></div>
@@ -800,6 +826,7 @@ var CURRENT_USER  = '<?= appData.user ?>';
 var NAMA_USER     = '<?= appData.namaUser ?>';
 var ROLE_USER     = '<?= appData.roleUser ?>';
 var IS_ADMIN      = <?= appData.isAdmin ? 'true' : 'false' ?>;
+var IS_SUPER_ADMIN = <?= appData.isSuperAdmin ? 'true' : 'false' ?>;
 
 var allTransaksi  = [];
 var currentFilter = 'belumfoto';
@@ -1370,7 +1397,10 @@ function _cardHtml(t, mode){
   var lunasTxt = kembali>0
     ? ('&#10003; Lengkap (Nota '+rupiah(t.notaTotal)+' + Kembali '+rupiah(kembali)+')')
     : '&#10003; Nota Lunas';
-  var h='<div class="tcard '+st+'">'+head
+  var hiddenBanner = (t.isHidden && IS_SUPER_ADMIN)
+    ? '<div style="background:#fef2f2;border:1px solid #fca5a5;border-left:4px solid #dc2626;border-radius:6px 6px 0 0;padding:4px 10px;font-size:11px;color:#dc2626;font-weight:bold">&#128683; Disembunyikan dari pengguna lain</div>'
+    : '';
+  h = hiddenBanner + '<div class="tcard '+st+'"' + (t.isHidden&&IS_SUPER_ADMIN?' style="border-top:none;border-radius:0 0 8px 8px"':'') + '>'+head
     +(lunas
        ? '<div class="amt amt-ok">&#10003; Lunas<span class="dt">'+esc(_tglID(t.tanggal))+'</span></div>'
        : '<div class="amt">-'+rupiah(sisa)+'<span class="dt">'+esc(_tglID(t.tanggal))+'</span></div>')
@@ -1445,6 +1475,14 @@ function _cardHtml(t, mode){
     if(lunas) h+='<button class="b-dark" onclick="cetakSPJ('+t.no+')">Cetak SPJ</button>';
     h+='<button class="b-spd" onclick="konversiKePd('+t.no+')" title="Jadikan transaksi ini Perjalanan Dinas">&#9992; Jadikan PD</button>'
       +'<button onclick="openModalPecah('+t.no+')" title="Pecah jadi beberapa transaksi">&#9986; Pecah</button>';
+  }
+  // Tombol sembunyikan — hanya Super Admin
+  if(IS_SUPER_ADMIN){
+    if(t.isHidden){
+      h+='<button class="b-gray" style="background:#dc2626;color:#fff" onclick="toggleHidden('+t.no+',false)" title="Tampilkan kembali">&#128065; Tampilkan</button>';
+    } else {
+      h+='<button class="b-gray" onclick="toggleHidden('+t.no+',true)" title="Sembunyikan dari pengguna lain">&#128683; Sembunyikan</button>';
+    }
   }
   h+='</div></div>';
   return h;
@@ -4298,6 +4336,32 @@ function _bukaPopup(html){
 }
 
 /* ============== Init ============== */
+/* ====== Halaman Sambutan ====== */
+function tutupSplash(){
+  var s=document.getElementById('splashScreen');
+  s.style.opacity='0'; s.style.visibility='hidden';
+  setTimeout(function(){ s.style.display='none'; }, 420);
+  try { sessionStorage.setItem('splashDone','1'); } catch(e){}
+}
+(function _initSplash(){
+  var el=document.getElementById('splashScreen');
+  try { if(sessionStorage.getItem('splashDone')==='1'){ el.style.display='none'; return; } } catch(e){}
+  var ROLE_LABEL={'admin':'&#9733; Admin','full':'Penuh','viewer':'Peninjau'};
+  document.getElementById('splashNama').innerHTML=esc(NAMA_USER||CURRENT_USER||'Tamu');
+  document.getElementById('splashEmail').textContent=CURRENT_USER||'';
+  document.getElementById('splashRole').innerHTML=(IS_SUPER_ADMIN?'&#128081; Super Admin':ROLE_LABEL[ROLE_USER]||ROLE_USER);
+  if(IS_SUPER_ADMIN) document.getElementById('splashRole').style.background='rgba(251,191,36,.35)';
+})();
+
+/* ====== Sembunyikan / tampilkan transaksi (Super Admin) ====== */
+function toggleHidden(no, hide){
+  showLoading(true, hide?'Menyembunyikan...':'Menampilkan...');
+  google.script.run
+    .withSuccessHandler(function(){ showLoading(false); toast(hide?'Transaksi disembunyikan':'Transaksi ditampilkan','success'); loadAll(); })
+    .withFailureHandler(fail)
+    .serverToggleHidden(no, hide);
+}
+
 (function init(){
   document.getElementById('userLabel').textContent=CURRENT_USER||'tamu';
   var btns=document.querySelectorAll('#filterBar button');

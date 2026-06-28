@@ -85,5 +85,25 @@ var Users = (function () {
     return { success: true };
   }
 
-  return { getRole: getRole, list: list, add: add, update: update, remove: remove };
+  /** true bila email terdaftar (termasuk Super Admin). */
+  function isRegistered(email) {
+    email = _norm(email);
+    if (!email) return false;
+    if (_isSuper(email)) return true;
+    return _findRow(email) !== 0;
+  }
+
+  /** Nama tampilan user; '' bila tidak ditemukan. */
+  function getNama(email) {
+    email = _norm(email);
+    if (_isSuper(email)) return 'Super Admin';
+    var c = UC(), data = SheetRepo.getData(CONFIG.SHEETS.USERS);
+    for (var i = 0; i < data.length; i++) {
+      if (_norm(data[i][c.EMAIL]) === email) return String(data[i][c.NAMA] || '');
+    }
+    return '';
+  }
+
+  return { getRole: getRole, list: list, add: add, update: update, remove: remove,
+           isRegistered: isRegistered, getNama: getNama };
 })();

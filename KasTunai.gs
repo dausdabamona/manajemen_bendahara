@@ -49,7 +49,8 @@ var KasTunai = (function () {
       pajakPpn:           Util.num(row[C.PAJAK_PPN]),
       pajakDpp:           Util.num(row[C.PAJAK_DPP]),
       pajakNamaPenyedia:  row[C.PAJAK_NAMA_PENYEDIA] || '',
-      pajakNpwpPenyedia:  row[C.PAJAK_NPWP_PENYEDIA] || ''
+      pajakNpwpPenyedia:  row[C.PAJAK_NPWP_PENYEDIA] || '',
+      isHidden:           String(row[C.IS_HIDDEN]||'').toUpperCase() === 'Y'
     };
   }
   /** true bila baris adalah pemindahan dana antar kas (Pindah Dana), bukan belanja riil. */
@@ -60,7 +61,7 @@ var KasTunai = (function () {
   /* -------------------------------------------------------- *
    * Ambil daftar transaksi aktif, recompute saldo berjalan
    * -------------------------------------------------------- */
-  function getTransaksi() {
+  function getTransaksi(isSuperAdmin) {
     var data = SheetRepo.getData(CONFIG.SHEETS.KAS_TUNAI);
     var out = [];
     var saldoTunai = CONFIG.SALDO_AWAL;
@@ -69,6 +70,7 @@ var KasTunai = (function () {
     for (var i = 0; i < data.length; i++) {
       var row = data[i];
       if (isDeleted(row[C.IS_DELETED])) continue;
+      if (!isSuperAdmin && String(row[C.IS_HIDDEN]||'').toUpperCase() === 'Y') continue;
       var obj = rowToObj(row, i + 2);
       // Saldo berjalan per SUMBER = +debet (masuk) - kredit (keluar).
       if (obj.sumber === 'BANK') {
@@ -474,8 +476,20 @@ var KasTunai = (function () {
     return { success: true };
   }
 
+  /** Super Admin: sembunyikan / tampilkan kembali transaksi. */
+  function toggleHidden(no, hide) {
+    var row = getRowByTransactionId(no);
+    if (!row) throw new Error('Transaksi tidak ditemukan');
+    SheetRepo.setCells(CONFIG.SHEETS.KAS_TUNAI, row.rowIndex,
+      Util.set(C.IS_HIDDEN, hide ? 'Y' : ''));
+    AuditLog.write(hide ? 'SEMBUNYIKAN' : 'TAMPILKAN', CONFIG.SHEETS.KAS_TUNAI, no, '');
+    DeferredFlush.mark();
+    return { success: true };
+  }
+
   return {
     getTransaksi: getTransaksi,
+    toggleHidden: toggleHidden,
     ringkasanSaldo: ringkasanSaldo,
     tambahTransaksi: tambahTransaksi,
     updateTransaksi: updateTransaksi,
