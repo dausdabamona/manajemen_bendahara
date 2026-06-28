@@ -49,7 +49,8 @@ var BuktiPD = (function () {
   /** Upload daftar bukti. fileArr: [{base64, mimeType, namaFile, jenisDok, keterangan}] */
   function uploadBukti(noTransaksi, fileArr) {
     var urutan = getBukti(noTransaksi).length;
-    fileArr = fileArr || [];
+    fileArr = (fileArr || []).filter(function(f){ return f && f.base64; });
+    if (!fileArr.length) throw new Error('Tidak ada data file yang valid untuk diunggah');
     for (var i = 0; i < fileArr.length; i++) {
       var fdoc = fileArr[i], now = new Date();
       urutan++;

@@ -3359,8 +3359,10 @@ function loadRekap(){
 /* ============== Foto: kompresi Canvas (max 1280px, q 0.7) ============== */
 function compressImage(file,cb){
   var reader=new FileReader();
+  reader.onerror=function(){ cb({base64:'',mimeType:file.type,namaFile:file.name}); };
   reader.onload=function(e){
     var img=new Image();
+    img.onerror=function(){ cb({base64:String(e.target.result),mimeType:file.type,namaFile:file.name}); };
     img.onload=function(){
       var max=1280,w=img.width,h=img.height;
       if(w>h&&w>max){h=Math.round(h*max/w);w=max;}
@@ -3368,7 +3370,7 @@ function compressImage(file,cb){
       var cv=document.createElement('canvas');cv.width=w;cv.height=h;
       cv.getContext('2d').drawImage(img,0,0,w,h);
       var dataUrl=cv.toDataURL('image/jpeg',0.7);
-      cb({base64:dataUrl,mimeType:'image/jpeg',namaFile:(file.name||'foto')+'.jpg'});
+      cb({base64:dataUrl,mimeType:'image/jpeg',namaFile:(file.name||'foto').replace(/\.[^.]+$/,'')+'.jpg'});
     };
     img.src=e.target.result;
   };
@@ -3870,13 +3872,25 @@ function renderBuktiList(list){
 function submitBukti(){
   if(!_bkPendingFiles.length){ toast('Pilih atau seret file dulu','error'); return; }
   var jenis=document.getElementById('bkJenis').value, ket=document.getElementById('bkKet').value.trim();
-  var files=_bkPendingFiles, arr=[], done=0, n=files.length;
+  var files=_bkPendingFiles.slice(); // snapshot agar tidak terpengaruh perubahan array
+  var arr=new Array(files.length), done=0, n=files.length;
   showLoading(true,'Memproses '+n+' file...');
+  function onPush(idx,obj){
+    obj.jenisDok=jenis; obj.keterangan=ket;
+    arr[idx]=obj; done++;
+    if(done===n) _kirimBukti(arr);
+  }
+  function onErr(idx,msg){ showLoading(false); toast('File '+(idx+1)+' gagal: '+msg,'error'); }
   for(var i=0;i<n;i++){ (function(idx){
     var f=files[idx];
-    function push(obj){ obj.jenisDok=jenis; obj.keterangan=ket; arr[idx]=obj; done++; if(done===n) _kirimBukti(arr); }
-    if(/^image\//.test(f.type)) compressImage(f, push);
-    else { var rd=new FileReader(); rd.onload=function(){ push({base64:String(rd.result),mimeType:f.type||'application/pdf',namaFile:f.name}); }; rd.readAsDataURL(f); }
+    if(/^image\//.test(f.type)){
+      compressImage(f, function(obj){ onPush(idx,obj); });
+    } else {
+      var rd=new FileReader();
+      rd.onerror=function(){ onErr(idx,'tidak dapat dibaca'); };
+      rd.onload=function(ev){ onPush(idx,{base64:String(ev.target.result),mimeType:f.type||'application/pdf',namaFile:f.name}); };
+      rd.readAsDataURL(f);
+    }
   })(i); }
 }
 function _kirimBukti(arr){
