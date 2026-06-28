@@ -162,6 +162,16 @@
   .sheet{background:#fff;width:100%;max-width:760px;border-radius:16px 16px 0 0;
     padding:16px;max-height:90vh;overflow:auto}
   .sheet h2{margin:0 0 12px;font-size:16px}
+  .dz-zone{border:2px dashed #cbd5e1;border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;
+    transition:border-color .15s,background .15s;background:#f8fafc;margin-bottom:8px;user-select:none}
+  .dz-zone:hover,.dz-zone.dz-over{border-color:#3b82f6;background:#eff6ff}
+  .dz-zone.dz-over{border-style:solid}
+  .dz-txt{font-size:13px;color:#374151}.dz-sub{font-size:11px;color:#9ca3af;margin-top:3px}
+  .dz-item{display:flex;align-items:center;gap:8px;padding:5px 10px;background:#f1f5f9;
+    border-radius:6px;margin-bottom:4px;font-size:12px}
+  .dz-item .dz-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dz-item .dz-sz{color:#6b7280;font-size:11px;flex-shrink:0}
+  .dz-item .dz-rm{color:#dc2626;text-decoration:none;flex-shrink:0;font-weight:bold}
   .field{margin-bottom:12px}
   .field label{display:block;font-size:13px;color:var(--c-muted);margin-bottom:4px}
   .field input,.field textarea,.field select{width:100%;border:1px solid var(--c-line);
@@ -600,20 +610,29 @@
 <!-- ================= MODAL BUKTI PERJALANAN DINAS ================= -->
 <div class="modal" id="modalBukti">
   <div class="sheet">
-    <h2>&#128206; Bukti Perjalanan Dinas <span id="bkLabel"></span></h2>
+    <h2>&#128206; Lampiran &amp; Bukti <span id="bkLabel"></span></h2>
     <div id="bkList"><div class="empty">Memuat...</div></div>
     <hr>
-    <h2 style="font-size:14px">Tambah Bukti (tiket / boarding pass)</h2>
+    <h2 style="font-size:14px">Tambah File</h2>
     <div class="row2">
       <div class="field"><label>Jenis dokumen</label>
-        <select id="bkJenis"><option>Tiket</option><option>Boarding Pass</option><option>Bukti Hotel</option><option>Bukti Transport</option><option>Lainnya</option></select></div>
+        <select id="bkJenis"><option>Tiket</option><option>Boarding Pass</option><option>Bukti Hotel</option><option>Bukti Transport</option><option>Nota</option><option>Kuitansi</option><option>Lainnya</option></select></div>
       <div class="field"><label>Keterangan (opsional)</label><input type="text" id="bkKet"></div>
     </div>
-    <div class="field"><label>File (foto JPG/PNG atau PDF — boleh beberapa) — atau <b>Ctrl+V</b> tempel screenshot</label>
-      <input type="file" id="bkFile" accept="image/*,application/pdf" multiple onchange="_showPastePreview(this)"></div>
+    <div id="bkDropZone" class="dz-zone"
+         onclick="document.getElementById('bkFile').click()"
+         ondragover="event.preventDefault();this.classList.add('dz-over')"
+         ondragleave="this.classList.remove('dz-over')"
+         ondrop="_bkDrop(event)">
+      <div style="font-size:32px;margin-bottom:6px">&#128193;</div>
+      <div class="dz-txt">Seret file ke sini atau <u>klik untuk pilih</u></div>
+      <div class="dz-sub">JPG, PNG, atau PDF &mdash; boleh beberapa file &mdash; atau <b>Ctrl+V</b> tempel screenshot</div>
+    </div>
+    <input type="file" id="bkFile" accept="image/*,application/pdf" multiple style="display:none" onchange="_bkAddFiles(this.files)">
+    <div id="bkQueue"></div>
     <button class="btn ghost scan-imp" style="display:none" onclick="importScanBukti()">&#128247; Impor dari Folder Scan</button>
-    <button class="btn" onclick="submitBukti()">Unggah Bukti</button>
-    <button class="btn ghost" onclick="unduhZipBukti(_bkTarget)">&#128476; Unduh ZIP Semua Bukti</button>
+    <button class="btn" onclick="submitBukti()">&#8679; Unggah</button>
+    <button class="btn ghost" onclick="unduhZipBukti(_bkTarget)">&#128476; Unduh ZIP Semua</button>
     <button class="btn ghost" onclick="closeModal('modalBukti')">Tutup</button>
   </div>
 </div>
@@ -2638,10 +2657,11 @@ function _onPasteUpload(e){
   if(document.getElementById('modalFoto').classList.contains('show')){ e.preventDefault(); _uploadFotoFiles(files); return; }
   // Form upload lain: isi <input type=file> pada modal yang sedang terbuka
   var modal=document.querySelector('.modal.show'); if(!modal) return;
-  var map={ modalNota:'ntFile', modalKuitansi:'kwFile', modalBukti:'bkFile' };
+  e.preventDefault();
+  if(modal.id==='modalBukti'){ _bkAddFiles(files); toast(files.length+' screenshot ditempel','success'); return; }
+  var map={ modalNota:'ntFile', modalKuitansi:'kwFile' };
   var inpId=map[modal.id]; if(!inpId) return;
   var inp=document.getElementById(inpId); if(!inp) return;
-  e.preventDefault();
   _setInputFiles(inp, files, !!inp.multiple);   // single: ganti; multiple: tambah
   _showPastePreview(inp);
   toast(files.length+' screenshot ditempel','success');
@@ -3786,10 +3806,37 @@ function _renderBuktiTransferHtml(t, o){
 
 /* ====== Bukti Perjalanan Dinas (tiket/boarding) ====== */
 var _bkTarget=null;
+var _bkPendingFiles=[];
+function _bkDrop(e){
+  e.preventDefault();
+  document.getElementById('bkDropZone').classList.remove('dz-over');
+  _bkAddFiles(e.dataTransfer.files);
+}
+function _bkAddFiles(files){
+  for(var i=0;i<files.length;i++) _bkPendingFiles.push(files[i]);
+  document.getElementById('bkFile').value='';
+  _bkRenderQueue();
+}
+function _bkRenderQueue(){
+  var el=document.getElementById('bkQueue');
+  if(!_bkPendingFiles.length){ el.innerHTML=''; return; }
+  var h='<div style="font-size:12px;font-weight:bold;margin:6px 0 4px;color:var(--c-primary)">'+_bkPendingFiles.length+' file dipilih:</div>';
+  for(var i=0;i<_bkPendingFiles.length;i++){
+    var f=_bkPendingFiles[i];
+    var icon=/^image\//.test(f.type)?'&#128444;':'&#128196;';
+    var sz=f.size>1048576?((f.size/1048576).toFixed(1)+' MB'):((f.size/1024).toFixed(0)+' KB');
+    h+='<div class="dz-item">'+icon+' <span class="dz-nm">'+esc(f.name)+'</span>'
+      +'<span class="dz-sz">'+sz+'</span>'
+      +'<a href="#" class="dz-rm" onclick="_bkRemoveFile('+i+');return false">&#215;</a></div>';
+  }
+  el.innerHTML=h;
+}
+function _bkRemoveFile(idx){ _bkPendingFiles.splice(idx,1); _bkRenderQueue(); }
 function openModalBukti(no){
-  _bkTarget=no;
+  _bkTarget=no; _bkPendingFiles=[];
   document.getElementById('bkLabel').textContent='(No '+no+')';
-  document.getElementById('bkFile').value=''; document.getElementById('bkKet').value=''; _clearPastePreview('bkFile');
+  document.getElementById('bkFile').value=''; document.getElementById('bkKet').value='';
+  document.getElementById('bkQueue').innerHTML='';
   document.getElementById('bkList').innerHTML='<div class="empty">Memuat...</div>';
   openModal('modalBukti');
   _muatBuktiList();
@@ -3811,10 +3858,9 @@ function renderBuktiList(list){
   el.innerHTML=h+'</div>';
 }
 function submitBukti(){
-  var fileEl=document.getElementById('bkFile');
-  if(!fileEl.files||!fileEl.files.length){ toast('Pilih file dulu','error'); return; }
+  if(!_bkPendingFiles.length){ toast('Pilih atau seret file dulu','error'); return; }
   var jenis=document.getElementById('bkJenis').value, ket=document.getElementById('bkKet').value.trim();
-  var files=fileEl.files, arr=[], done=0, n=files.length;
+  var files=_bkPendingFiles, arr=[], done=0, n=files.length;
   showLoading(true,'Memproses '+n+' file...');
   for(var i=0;i<n;i++){ (function(idx){
     var f=files[idx];
@@ -3826,7 +3872,7 @@ function submitBukti(){
 function _kirimBukti(arr){
   showLoading(true,'Mengunggah '+arr.length+' bukti...');
   google.script.run.withSuccessHandler(function(){ showLoading(false); toast('Bukti terunggah','success');
-      document.getElementById('bkFile').value=''; _clearPastePreview('bkFile'); _muatBuktiList(); })
+      _bkPendingFiles=[]; document.getElementById('bkFile').value=''; document.getElementById('bkQueue').innerHTML=''; _muatBuktiList(); })
     .withFailureHandler(fail).serverUploadBuktiPD(_bkTarget,arr);
 }
 function hapusBukti(urutan){
