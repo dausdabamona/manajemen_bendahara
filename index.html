@@ -585,15 +585,15 @@
       <div class="field"><label>PPN manual (Rp) — kosong=otomatis</label><input type="text" class="numfmt" id="pjPpnManual" inputmode="numeric" oninput="recalcPajak()"></div>
     </div>
     <div id="pjRincian" class="card" style="margin:0 0 12px"></div>
-    <div class="row2">
-      <button class="btn" onclick="cetakSSP('pph')">&#128424; SSP PPh</button>
-      <button class="btn" onclick="cetakSSP('ppn')">&#128424; SSP PPN</button>
+    <div class="row2" style="margin-top:8px">
+      <button class="btn ghost" onclick="cetakSSP('pph')">&#128424; SSP PPh</button>
+      <button class="btn ghost" onclick="cetakSSP('ppn')">&#128424; SSP PPN</button>
     </div>
     <div class="row2" style="margin-top:8px">
-      <button class="btn" onclick="simpanPajakModal()">&#128190; Simpan Pajak</button>
       <button class="btn ghost" onclick="cetakKuitansiPajakModal()">&#129534; Kuitansi Pajak</button>
+      <button class="btn ghost" style="color:var(--c-muted);border-color:var(--c-line)" onclick="closeModal('modalPajak')">Batal (tanpa simpan)</button>
     </div>
-    <button class="btn ghost" onclick="closeModal('modalPajak')">Tutup</button>
+    <button class="btn" style="margin-top:8px;width:100%;font-size:15px" onclick="simpanPajakModal()">&#128190; Simpan &amp; Tutup</button>
   </div>
 </div>
 
