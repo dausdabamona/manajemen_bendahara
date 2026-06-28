@@ -22,3 +22,6 @@ jobs:
 
       - name: Push to Google Apps Script
         run: clasp push --force
+
+      - name: Deploy (update versi live /exec)
+        run: clasp deploy --deploymentId "AKfycbye24yskdQ-NvEpBLVfhATRxBzeE-Vq6VcDUlG_0n9EoN8P9vswtYSVApxJTvaLQgI" -d "Auto-deploy via GitHub Actions"
