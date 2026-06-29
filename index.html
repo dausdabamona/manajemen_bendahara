@@ -60,6 +60,7 @@
   .filters button[data-f="belumlunas"]{border-left-color:#ea7317}
   .filters button[data-f="belumfoto"]{border-left-color:#2563eb}
   .filters button[data-f="spby"]{border-left-color:#7c3aed}
+  .filters button[data-f="belumkuitansi"]{border-left-color:#0891b2}
   .filters button.active{color:#fff}
   .filters button.active[data-f="all"]{background:#16456e;border-color:#16456e}
   .filters button.active[data-f="belum"]{background:#dc2626;border-color:#dc2626}
@@ -67,6 +68,7 @@
   .filters button.active[data-f="belumlunas"]{background:#ea7317;border-color:#ea7317}
   .filters button.active[data-f="belumfoto"]{background:#2563eb;border-color:#2563eb}
   .filters button.active[data-f="spby"]{background:#7c3aed;border-color:#7c3aed}
+  .filters button.active[data-f="belumkuitansi"]{background:#0891b2;border-color:#0891b2}
 
   /* Daftar transaksi + kolom */
   .daftar-head{background:#16456e;color:#fff;border-radius:10px 10px 0 0;padding:10px 14px;
@@ -287,6 +289,7 @@
     <button data-f="belumfoto" class="active">&#129534; Belum Foto</button>
     <button data-f="spby">&#128203; SPBY</button>
     <button data-f="belumspby">&#128203; Belum SPBY</button>
+    <button data-f="belumkuitansi">&#129534; Belum Kuitansi/TTD</button>
   </div>
 
   <div class="daftar-head">
@@ -1112,6 +1115,7 @@ function passFilter(t){
     case 'belumfoto': return t.kredit>0 && fotoCount(t)===0;
     case 'spby': return !!t.noSpby;
     case 'belumspby': return t.kredit>0 && !t.noSpby;
+    case 'belumkuitansi': return t.kredit>0 && !t.kuitansiUrl;
     default: return true;
   }
 }
