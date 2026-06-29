@@ -11,29 +11,19 @@
 function doGet() {
   var email = _safeEmail();
 
-  // Blokir akses bila email terdeteksi tapi belum terdaftar
-  // (bila email kosong = GAS tidak dapat identify user → izinkan sebagai viewer)
-  if (email && !Users.isRegistered(email)) {
-    var deniedHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
-      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
-      + '<title>Akses Ditolak</title>'
-      + '<style>*{box-sizing:border-box;font-family:Arial,sans-serif;margin:0}body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f1f5f9}'
-      + '.card{background:#fff;border-radius:16px;padding:40px 32px;max-width:440px;width:90%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}'
-      + '.icon{font-size:56px;margin-bottom:16px}.title{font-size:22px;font-weight:bold;color:#1e293b;margin-bottom:8px}'
-      + '.sub{font-size:14px;color:#64748b;margin-bottom:20px;line-height:1.6}'
-      + '.email{background:#f1f5f9;border-radius:8px;padding:8px 14px;font-size:13px;color:#374151;display:inline-block;margin-bottom:20px}'
-      + '.note{font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px;margin-top:4px}'
-      + '</style></head><body>'
-      + '<div class="card">'
-      + '<div class="icon">&#128274;</div>'
-      + '<div class="title">Akses Ditolak</div>'
-      + '<div class="sub">Akun Anda belum terdaftar sebagai pengguna aplikasi ini.</div>'
-      + (email ? '<div class="email">&#128100; ' + email + '</div>' : '')
-      + '<div class="note">Hubungi Super Admin untuk mendapatkan akses.<br>Politeknik KP Sorong &mdash; Sistem Manajemen Bendahara</div>'
-      + '</div></body></html>';
-    return HtmlService.createHtmlOutput(deniedHtml)
-      .setTitle('Akses Ditolak')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  // Cek apakah user terdaftar; bungkus try-catch agar error sheet tidak memblokir
+  var registered = true;
+  if (email) {
+    try {
+      registered = Users.isRegistered(email);
+    } catch (e) {
+      Logger.log('[doGet] isRegistered error untuk ' + email + ': ' + e.message);
+      registered = true; // gagal-aman: jangan blokir bila cek gagal
+    }
+  }
+
+  if (email && !registered) {
+    return _halamanDitolak(email);
   }
 
   var tpl = HtmlService.createTemplateFromFile('index');
@@ -52,6 +42,32 @@ function doGet() {
     .setTitle('Kas Tunai - Poltek KP Sorong')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function _halamanDitolak(email) {
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>Akses Ditolak</title>'
+    + '<style>*{box-sizing:border-box;font-family:Arial,sans-serif;margin:0}'
+    + 'body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f1f5f9}'
+    + '.card{background:#fff;border-radius:16px;padding:40px 32px;max-width:440px;width:90%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}'
+    + '.icon{font-size:56px;margin-bottom:16px}'
+    + '.title{font-size:22px;font-weight:bold;color:#1e293b;margin-bottom:8px}'
+    + '.sub{font-size:14px;color:#64748b;margin-bottom:20px;line-height:1.6}'
+    + '.email{background:#f1f5f9;border-radius:8px;padding:8px 14px;font-size:13px;color:#374151;display:inline-block;margin-bottom:20px}'
+    + '.note{font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px;margin-top:4px}'
+    + '</style></head><body>'
+    + '<div class="card">'
+    + '<div class="icon">&#128274;</div>'
+    + '<div class="title">Akses Ditolak</div>'
+    + '<div class="sub">Akun Anda belum terdaftar sebagai pengguna aplikasi ini.</div>'
+    + (email ? '<div class="email">&#128100; ' + email + '</div>' : '')
+    + '<div class="note">Hubungi Super Admin untuk mendapatkan akses.'
+    + '<br>Politeknik KP Sorong &mdash; Sistem Manajemen Bendahara</div>'
+    + '</div></body></html>';
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('Akses Ditolak')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 /** Include partial HTML/CSS/JS (dipakai bila file dipecah). */
@@ -135,6 +151,18 @@ function serverUpdateUser(email, nama, role) {
 }
 function serverDeleteUser(email) {
   return _run(function () { _requireAdmin(); return Users.remove(email); });
+}
+
+/**
+ * Jalankan dari GAS Editor untuk memverifikasi user terdaftar.
+ * Contoh: debugCekUser('rumaropen86elis@gmail.com')
+ */
+function debugCekUser(email) {
+  var list = Users.list();
+  Logger.log('Daftar user (' + list.length + '):');
+  for (var i = 0; i < list.length; i++) Logger.log(JSON.stringify(list[i]));
+  Logger.log('isRegistered("' + email + '"): ' + Users.isRegistered(email));
+  Logger.log('getRole("' + email + '"): ' + Users.getRole(email));
 }
 
 /** Perbaiki header kolom kosong secara manual (dari frontend bila perlu). */
