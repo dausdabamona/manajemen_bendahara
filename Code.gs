@@ -11,8 +11,9 @@
 function doGet() {
   var email = _safeEmail();
 
-  // Blokir akses bila belum terdaftar
-  if (!Users.isRegistered(email)) {
+  // Blokir akses bila email terdeteksi tapi belum terdaftar
+  // (bila email kosong = GAS tidak dapat identify user → izinkan sebagai viewer)
+  if (email && !Users.isRegistered(email)) {
     var deniedHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
       + '<meta name="viewport" content="width=device-width,initial-scale=1">'
       + '<title>Akses Ditolak</title>'
