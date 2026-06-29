@@ -395,6 +395,24 @@ function serverImporBank(list) {
     return hasil;
   });
 }
+function serverImporCSV(rows) {
+  return _run(function () {
+    _requireAdmin();
+    rows = rows || [];
+    var hasil = { ditambah: 0, gagal: 0, errors: [] };
+    for (var i = 0; i < rows.length; i++) {
+      try {
+        KasTunai.tambahTransaksi(rows[i]);
+        hasil.ditambah++;
+      } catch (e) {
+        hasil.gagal++;
+        hasil.errors.push('Baris ' + (i + 2) + ': ' + e.message);
+      }
+    }
+    return hasil;
+  });
+}
+
 /* ============================================================
  * Bukti Perjalanan Dinas (tiket/boarding) + SPJ bundel
  * ============================================================ */

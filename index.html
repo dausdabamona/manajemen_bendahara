@@ -196,6 +196,22 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   #loading .msg{font-size:14px;color:var(--c-text);font-weight:600}
   .hidden{display:none!important}
+
+  /* Modal Impor CSV */
+  .csv-topbar{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .csv-hint{font-size:11px;color:var(--c-muted);background:#f8fafc;border:1px solid var(--c-line);border-radius:8px;padding:8px 12px;margin-bottom:12px;line-height:1.7}
+  .csv-hint code{background:#e2e8f0;padding:1px 5px;border-radius:4px;font-size:11px}
+  .csv-tbl{width:100%;border-collapse:collapse;font-size:11px}
+  .csv-tbl th{background:#eef2f7;padding:5px 8px;text-align:left;border:1px solid #cbd5e1;white-space:nowrap;position:sticky;top:0}
+  .csv-tbl td{padding:4px 8px;border:1px solid #e2e8f0;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .csv-tbl tr.csv-ok td{background:#f0fdf4}
+  .csv-tbl tr.csv-warn td{background:#fffbeb}
+  .csv-tbl tr.csv-err td{background:#fef2f2}
+  .csv-tbl .csv-status{font-size:10px;font-weight:700;white-space:nowrap}
+  #csvSummaryBar{display:flex;gap:10px;margin-bottom:8px;font-size:12px;flex-wrap:wrap}
+  #csvSummaryBar .s-ok{color:#16a34a;font-weight:700}
+  #csvSummaryBar .s-warn{color:#ca8a04;font-weight:700}
+  #csvSummaryBar .s-err{color:#dc2626;font-weight:700}
 </style>
 </head>
 <body>
@@ -418,6 +434,7 @@
     <h2>Tambah Transaksi</h2>
     <button class="btn" style="background:var(--c-ok)" onclick="openModalTransaksi('masuk')">&#11015; Transaksi Masuk (Debet)</button>
     <button class="btn" style="background:var(--c-err);margin-top:8px" onclick="openModalTransaksi('keluar')">&#11014; Transaksi Keluar (Kredit)</button>
+    <button class="btn" style="background:#0891b2;margin-top:8px" onclick="closeModal('modalPilihTx');openModalImporCSV()">&#128194; Impor dari CSV</button>
     <button class="btn ghost" style="margin-top:8px" onclick="closeModal('modalPilihTx')">Batal</button>
   </div>
 </div>
@@ -495,6 +512,40 @@
       <button class="btn" style="background:var(--c-ok)" onclick="submitImporRk()">Impor ke Kas Bank</button>
     </div>
     <button class="btn ghost" onclick="closeModal('modalImporRk')">Tutup</button>
+  </div>
+</div>
+
+<!-- ================= MODAL IMPOR CSV ================= -->
+<div class="modal" id="modalImporCSV">
+  <div class="sheet" style="max-width:700px">
+    <h2>&#128194; Impor Transaksi dari CSV</h2>
+    <div class="csv-topbar">
+      <label class="btn" style="background:#0891b2;cursor:pointer;display:inline-block;padding:8px 14px;border-radius:8px;color:#fff;font-size:13px;font-weight:600;margin-bottom:0">
+        &#128194; Pilih File CSV
+        <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none" onchange="csvBacaFile(this)">
+      </label>
+      <button class="btn ghost" style="width:auto;padding:8px 14px;font-size:13px" onclick="unduhTemplateCsv()">&#11123; Unduh Template</button>
+    </div>
+    <div class="csv-hint">
+      Format kolom: <code>TANGGAL, KEGIATAN, PENJAB, JENIS (D/K), NILAI, SUMBER, KETERANGAN, AKUN</code><br>
+      <span style="color:#dc2626">&#9632;</span> Merah = baris tidak valid (dilewati) &nbsp;
+      <span style="color:#ca8a04">&#9632;</span> Kuning = ada peringatan &nbsp;
+      <span style="color:#16a34a">&#9632;</span> Hijau = siap diimpor
+    </div>
+    <div id="csvPreviewWrap" class="hidden">
+      <div id="csvSummaryBar"></div>
+      <div style="max-height:300px;overflow:auto;border:1px solid var(--c-line);border-radius:8px;margin-bottom:10px">
+        <table class="csv-tbl" id="csvPreviewTbl">
+          <thead><tr>
+            <th>#</th><th>Tanggal</th><th>Kegiatan</th><th>Penjab</th>
+            <th>Jenis</th><th>Nilai</th><th>Sumber</th><th>Keterangan</th><th>Akun</th><th>Status</th>
+          </tr></thead>
+          <tbody id="csvPreviewBody"></tbody>
+        </table>
+      </div>
+      <button class="btn" id="csvImporBtn" style="background:#0891b2" onclick="submitImporCSV()">Impor</button>
+    </div>
+    <button class="btn ghost" style="margin-top:8px" onclick="closeModal('modalImporCSV');csvReset()">Tutup</button>
   </div>
 </div>
 
@@ -2976,6 +3027,193 @@ function submitImporRk(){
     .withFailureHandler(fail)
     .serverImporBank(rows);
 }
+/* ===== IMPOR CSV ===== */
+var _csvRows = []; // hasil parse + validasi
+
+function openModalImporCSV(){
+  csvReset();
+  openModal('modalImporCSV');
+}
+
+function csvReset(){
+  _csvRows=[];
+  document.getElementById('csvFileInput').value='';
+  document.getElementById('csvPreviewWrap').classList.add('hidden');
+  document.getElementById('csvSummaryBar').innerHTML='';
+  document.getElementById('csvPreviewBody').innerHTML='';
+}
+
+function unduhTemplateCsv(){
+  var bom='﻿';
+  var header='TANGGAL,KEGIATAN,PENJAB,JENIS,NILAI,SUMBER,KETERANGAN,AKUN\n';
+  var c1='2026-01-15,Pembelian ATK Kantor,Budi Santoso,K,450000,TUNAI,Untuk kebutuhan rapat,521211\n';
+  var c2='2026-01-16,Penerimaan Dana Kegiatan,,D,2000000,TUNAI,,\n';
+  var c3='2026-01-17,Transport Rapat Koordinasi,Siti Rahayu,K,150000,TUNAI,Uang harian,524111\n';
+  var blob=new Blob([bom+header+c1+c2+c3],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='template_impor_transaksi.csv';
+  a.click();
+}
+
+function csvBacaFile(input){
+  var file=input.files[0];
+  if(!file) return;
+  var rd=new FileReader();
+  rd.onload=function(e){
+    var text=e.target.result;
+    // hapus BOM jika ada
+    if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+    _csvRows=_csvParse(text);
+    _csvPreviewRender();
+  };
+  rd.readAsText(file,'UTF-8');
+}
+
+function _csvParse(text){
+  var lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  var rows=[];
+  // lewati baris header (baris 0)
+  for(var i=1;i<lines.length;i++){
+    var ln=lines[i].trim();
+    if(!ln) continue;
+    var cols=_csvSplitLine(ln);
+    var tgl=_csvNormTgl(cols[0]||'');
+    var kegiatan=(cols[1]||'').trim();
+    var penjab=(cols[2]||'').trim();
+    var jenis=(cols[3]||'K').trim().toUpperCase();
+    var nilai=parseFloat((cols[4]||'0').replace(/[^0-9.,]/g,'').replace(',','.'))||0;
+    var sumber=(cols[5]||'TUNAI').trim().toUpperCase();
+    var keterangan=(cols[6]||'').trim();
+    var akun=(cols[7]||'').trim();
+
+    // validasi
+    var errors=[], warnings=[];
+    if(!tgl) errors.push('Tanggal tidak valid');
+    if(!kegiatan) errors.push('Kegiatan kosong');
+    if(nilai<=0) errors.push('Nilai harus >0');
+    if(jenis!=='D'&&jenis!=='K') errors.push('Jenis harus D atau K');
+    if(!penjab) warnings.push('Penjab kosong');
+    if(sumber!=='TUNAI'&&sumber!=='BANK'){ warnings.push('Sumber diubah ke TUNAI'); sumber='TUNAI'; }
+    if(!akun) warnings.push('Akun kosong');
+
+    var valid=errors.length===0;
+    rows.push({
+      rawNo:i+1, tgl:tgl, kegiatan:kegiatan, penjab:penjab,
+      jenis:jenis, nilai:nilai, sumber:sumber, keterangan:keterangan, akun:akun,
+      valid:valid, errors:errors, warnings:warnings
+    });
+  }
+  return rows;
+}
+
+function _csvSplitLine(line){
+  // handle nilai yang mengandung koma dalam tanda kutip
+  var cols=[], cur='', inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){ inQ=!inQ; continue; }
+    if(c===','&&!inQ){ cols.push(cur); cur=''; continue; }
+    cur+=c;
+  }
+  cols.push(cur);
+  return cols;
+}
+
+function _csvNormTgl(s){
+  s=(s||'').trim();
+  if(!s) return '';
+  // YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // DD/MM/YYYY atau DD-MM-YYYY
+  var m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) return m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2);
+  // coba parse generic
+  var d=new Date(s);
+  if(!isNaN(d.getTime())){
+    return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  }
+  return '';
+}
+
+function _csvPreviewRender(){
+  var nOk=0,nWarn=0,nErr=0;
+  var tbody=document.getElementById('csvPreviewBody');
+  var html='';
+  for(var i=0;i<_csvRows.length;i++){
+    var r=_csvRows[i];
+    var cls=r.valid?(r.warnings.length?'csv-warn':'csv-ok'):'csv-err';
+    if(r.valid&&r.warnings.length===0) nOk++;
+    else if(r.valid) nWarn++;
+    else nErr++;
+    var statusTxt=r.valid
+      ?(r.warnings.length?('<span style="color:#ca8a04">&#9888; '+r.warnings.join('; ')+'</span>'):'<span style="color:#16a34a">&#10003; OK</span>')
+      :('<span style="color:#dc2626">&#10006; '+r.errors.join('; ')+'</span>');
+    html+='<tr class="'+cls+'">'
+      +'<td>'+r.rawNo+'</td>'
+      +'<td>'+esc(r.tgl||'-')+'</td>'
+      +'<td title="'+esc(r.kegiatan)+'">'+esc(r.kegiatan.slice(0,30)+(r.kegiatan.length>30?'…':''))+'</td>'
+      +'<td>'+esc(r.penjab||'-')+'</td>'
+      +'<td style="text-align:center">'+(r.jenis==='D'?'&#11015; D':'&#11014; K')+'</td>'
+      +'<td style="text-align:right">'+rupiah(r.nilai)+'</td>'
+      +'<td>'+esc(r.sumber)+'</td>'
+      +'<td title="'+esc(r.keterangan)+'">'+esc(r.keterangan.slice(0,25)+(r.keterangan.length>25?'…':''))+'</td>'
+      +'<td>'+esc(r.akun||'-')+'</td>'
+      +'<td class="csv-status">'+statusTxt+'</td>'
+      +'</tr>';
+  }
+  tbody.innerHTML=html;
+
+  var summary='<span class="s-ok">&#9632; '+nOk+' siap diimpor</span>';
+  if(nWarn>0) summary+=' <span class="s-warn">&#9632; '+nWarn+' peringatan (tetap diimpor)</span>';
+  if(nErr>0) summary+=' <span class="s-err">&#9632; '+nErr+' tidak valid (dilewati)</span>';
+  document.getElementById('csvSummaryBar').innerHTML=summary;
+
+  var validTotal=nOk+nWarn;
+  var btn=document.getElementById('csvImporBtn');
+  btn.textContent='Impor '+(validTotal>0?validTotal+' transaksi':'(tidak ada baris valid)');
+  btn.disabled=validTotal===0;
+  btn.style.opacity=validTotal===0?'0.5':'1';
+
+  document.getElementById('csvPreviewWrap').classList.remove('hidden');
+}
+
+function submitImporCSV(){
+  var validRows=_csvRows.filter(function(r){return r.valid;});
+  if(!validRows.length){ toast('Tidak ada baris valid untuk diimpor','error'); return; }
+  if(!confirm('Impor '+validRows.length+' transaksi ke Kas Tunai?')) return;
+
+  var payload=validRows.map(function(r){
+    var isDebet=r.jenis==='D';
+    return {
+      tanggal:r.tgl,
+      kegiatan:r.kegiatan,
+      penjab:r.penjab,
+      debet:isDebet?r.nilai:0,
+      kredit:isDebet?0:r.nilai,
+      sumber:r.sumber,
+      keterangan:r.keterangan,
+      akun:r.akun,
+      persediaan:false
+    };
+  });
+
+  showLoading(true,'Mengimpor '+payload.length+' transaksi...');
+  google.script.run
+    .withSuccessHandler(function(res){
+      showLoading(false);
+      closeModal('modalImporCSV');
+      csvReset();
+      var msg='Impor selesai: '+res.ditambah+' berhasil';
+      if(res.gagal>0) msg+=', '+res.gagal+' gagal ('+res.errors.join('; ')+')';
+      toast(msg, res.gagal>0?'info':'success');
+      loadAll();
+    })
+    .withFailureHandler(fail)
+    .serverImporCSV(payload);
+}
+/* ===== AKHIR IMPOR CSV ===== */
+
 function submitTransaksi(){
   var nilai=unfmt(document.getElementById('txNilai').value);
   var data={
