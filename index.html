@@ -1472,7 +1472,9 @@ function _cardHtml(t, mode){
       +'<button class="b-purple" onclick="bukaModalKuitansi('+t.no+')">'+(t.sumber==='BANK'?'Bukti Transfer':'Tanda Terima')+'</button>'
       +'<button class="b-spby" onclick="openModalSpby('+t.no+','+t.rowIndex+')">'+(t.noSpby?'SPBY &#10003;':'SPBY')+'</button>'
       +'<button class="b-gray" onclick="openModalBukti('+t.no+')">&#128206; Lampiran</button>';
-    if(lunas) h+='<button class="b-dark" onclick="cetakSPJ('+t.no+')">Cetak SPJ</button>';
+    h+=lunas
+      ?'<button class="b-dark" onclick="cetakSPJ('+t.no+')">&#129534; Cetak SPJ</button>'
+      :'<button class="b-orange" onclick="cetakSPJ('+t.no+')">&#128203; Lap. Sementara</button>';
     h+='<button class="b-spd" onclick="konversiKePd('+t.no+')" title="Jadikan transaksi ini Perjalanan Dinas">&#9992; Jadikan PD</button>'
       +'<button onclick="openModalPecah('+t.no+')" title="Pecah jadi beberapa transaksi">&#9986; Pecah</button>';
   }
@@ -1724,12 +1726,23 @@ function _renderSpjHtml(t, notas, fotoPerNota, imgB64, buktiPD){
   +'.ftnone{color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:8px;font-size:11px;text-align:center}'
   +'.total{text-align:right;font-weight:bold;color:#16456e;font-size:15px;margin-top:6px}'
   +'.foot{text-align:center;font-size:10px;color:#9aa;margin-top:16px}'
+  +'.stbl{width:100%;border-collapse:collapse;margin:12px 0 16px;font-size:12px}'
+  +'.stbl th,.stbl td{border:1px solid #cbd5e1;padding:6px 10px}'
+  +'.stbl thead{background:#eef2f7;font-weight:bold;color:#16456e}'
+  +'.stbl .rt{text-align:right}'
+  +'.trsum td{background:#dbeafe;font-weight:bold;color:#1e40af}'
+  +'.trsisa td{background:#fee2e2;font-weight:bold;color:#991b1b;font-size:13px}'
+  +'.trok td{background:#dcfce7;color:#166534}'
+  +'.sekbukti{display:flex;gap:20px;background:#f8fafc;border:1px solid #e2e6ec;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px}'
+  +'.sekbukti span{color:#374151}'
   +'a{text-decoration:none;color:inherit} img{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
   +'.noprint{margin-bottom:10px;text-align:right}@media print{.noprint{display:none}}'
   +'</style></head><body>'
   +'<div class="noprint"><button onclick="window.print()">Cetak / Simpan PDF</button> '
   +'<span style="font-size:11px;color:#6b7280">Tip: tunggu semua foto termuat sebelum mencetak</span></div>'
-  +'<h1>Laporan SPJ PUM (Pemegang Uang Muka)</h1>'
+  +(lengkap
+    ?'<h1>Laporan SPJ PUM (Pemegang Uang Muka)</h1>'
+    :'<h1>Laporan Status Uang Keluar Bendahara</h1><div style="text-align:center;color:#9a3412;font-size:12px;font-weight:bold;margin-bottom:4px">&#9888; LAPORAN SEMENTARA — Pertanggungjawaban Belum Lengkap</div>')
   +'<div class="sub">No. '+noKt+' &middot; '+_tglPanjang(t.tanggal)+' &middot; '+notas.length+' nota &middot; '+totalFoto+' foto tagging</div>'
   +'<div class="hr"></div>'
   +'<div class="grid">'
@@ -1742,18 +1755,32 @@ function _renderSpjHtml(t, notas, fotoPerNota, imgB64, buktiPD){
   +'</div>'
   +((t.akun||t.persediaan)?('<div class="grid"><div class="bx"><div class="k">Akun / MAK</div><div class="v">'+esc(t.akun||'-')+(t.persediaan?' &middot; Persediaan':'')+'</div></div></div>'):'')
   +'<div class="status'+(lengkap?'':' no')+'"><div class="s">'
-  +(lengkap?('&#9989; Pertanggungjawaban Lengkap ('+rupiah(totalNota+dikembalikan)+')')
-           :('&#9888; Belum Lengkap ('+rupiah(totalNota+dikembalikan)+' dari '+rupiah(targetSpj)+')'))
-  +'</div><div class="x">Nota '+rupiah(totalNota)
-  +(dikembalikan>0?(' + Dikembalikan '+rupiah(dikembalikan)):'')
-  +' &middot; '+notas.length+' nota | '+totalFoto+' foto tagging'
+  +(lengkap?('&#9989; Pertanggungjawaban Lengkap')
+           :('&#9888; Laporan Sementara — Belum Seluruhnya Dipertanggungjawabkan'))
+  +'</div><div class="x">Dicetak: '+_tglPanjang(new Date().toISOString().slice(0,10))
   +(t.noSpby?(' &middot; SPBY '+esc(t.noSpby)+(t.nilaiSpby>0?(' = '+rupiah(t.nilaiSpby)):'')):'')
-  +(selisihSpj>0?(' &middot; selisih disetor '+rupiah(selisihSpj)):'')
   +'</div></div>'
+  // Tabel ringkasan keuangan
+  +'<table class="stbl"><thead><tr><th>Uraian</th><th class="rt">Jumlah</th></tr></thead><tbody>'
+  +'<tr><td>Uang keluar dari bendahara (PUM)</td><td class="rt">'+rupiah(nilai)+'</td></tr>'
+  +'<tr><td>&#128203; Nota / Kuitansi sudah masuk ('+notas.length+' nota)</td><td class="rt">'+rupiah(totalNota)+'</td></tr>'
+  +(dikembalikan>0?('<tr><td>&#8617; Uang dikembalikan ke bendahara</td><td class="rt">'+rupiah(dikembalikan)+'</td></tr>'):'')
+  +'<tr class="trsum"><td>&#10003; Total sudah dipertanggungjawabkan</td><td class="rt">'+rupiah(totalNota+dikembalikan)+'</td></tr>'
+  +(selisihSpj>0
+    ?('<tr class="trsisa"><td>&#9888; <b>Sisa belum dipertanggungjawabkan</b></td><td class="rt"><b>'+rupiah(selisihSpj)+'</b></td></tr>')
+    :'<tr class="trok"><td>&#9989; Tidak ada sisa (lunas)</td><td class="rt">'+rupiah(0)+'</td></tr>')
+  +'</tbody></table>'
+  // Ringkasan bukti yang sudah ada
+  +'<div class="sekbukti">'
+  +'<span>&#128247; Foto Tagging: <b>'+totalFoto+'</b></span>'
+  +'<span>&#128206; Lampiran Bukti: <b>'+(buktiPD||[]).length+'</b></span>'
+  +'<span>&#129534; Foto Nota: <b>'+notas.filter(function(n){return !!n.fileId;}).length+' / '+notas.length+'</b></span>'
+  +'</div>'
   +'<div class="sechead">&#129534; Rincian Nota &amp; Foto Barang</div>'
   +notaHtml
   +'<div class="total">Total Nota: '+rupiah(totalNota)
   +(dikembalikan>0?(' &nbsp;|&nbsp; Dikembalikan: '+rupiah(dikembalikan)+' &nbsp;|&nbsp; Total PJ: '+rupiah(totalNota+dikembalikan)):'')
+  +(selisihSpj>0?(' &nbsp;|&nbsp; <span style="color:#9a3412">Sisa: '+rupiah(selisihSpj)+'</span>'):'')
   +'</div>'
   +_renderLampiranSection(buktiPD||[])
   +'</body></html>';
