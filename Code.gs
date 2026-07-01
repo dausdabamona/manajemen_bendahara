@@ -413,6 +413,25 @@ function serverImporCSV(rows) {
   });
 }
 
+function serverGetLogoKkp() {
+  var CACHE_KEY = 'logo_kkp_b64';
+  var cached = CacheService.getScriptCache().get(CACHE_KEY);
+  if (cached) return cached;
+  try {
+    var url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/'
+      + 'Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg/'
+      + '200px-Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg.png';
+    var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return '';
+    var dataUri = 'data:image/png;base64,' + Utilities.base64Encode(res.getContent());
+    CacheService.getScriptCache().put(CACHE_KEY, dataUri, 21600);
+    return dataUri;
+  } catch (e) {
+    Logger.log('[serverGetLogoKkp] ' + e.message);
+    return '';
+  }
+}
+
 /* ============================================================
  * Bukti Perjalanan Dinas (tiket/boarding) + SPJ bundel
  * ============================================================ */

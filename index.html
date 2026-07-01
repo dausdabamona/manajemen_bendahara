@@ -884,6 +884,7 @@ var IS_SUPER_ADMIN = <?= appData.isSuperAdmin ? 'true' : 'false' ?>;
 
 var allTransaksi  = [];
 var currentFilter = 'belumfoto';
+var _logoKkp      = ''; // data URI logo KKP, diisi async saat app load
 var currentSearch = '';        // kata kunci pencarian (kegiatan/penjab)
 var currentMonth  = '';        // filter bulan 'YYYY-MM' ('' = semua bulan)
 var currentPenjab = '';        // filter penanggung jawab ('' = semua)
@@ -1123,7 +1124,19 @@ function switchTab(tab){
 }
 
 /* ============== Load transaksi ============== */
+function _initLogoKkp(){
+  var cached=sessionStorage.getItem('kkp_logo_b64');
+  if(cached){ _logoKkp=cached; return; }
+  google.script.run
+    .withSuccessHandler(function(uri){
+      _logoKkp=uri||'';
+      if(uri) sessionStorage.setItem('kkp_logo_b64',uri);
+    })
+    .serverGetLogoKkp();
+}
+
 function loadAll(){
+  _initLogoKkp();
   showLoading(true,'Memuat transaksi...');
   google.script.run
     .withSuccessHandler(function(d){
@@ -2356,9 +2369,9 @@ function _kopCss(){
     +'.kop-hr2{border:0;border-top:1px solid #000;margin:0 0 10px}';
 }
 function _kopHtml(){
-  var LOGO_KKP = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg/200px-Seal_of_the_Ministry_of_Marine_Affairs_and_Fisheries_of_the_Republic_of_Indonesia.svg.png';
+  var logoHtml=_logoKkp?('<img src="'+_logoKkp+'">'):'<div style="width:100px;height:100px"></div>';
   return '<table class="kop-tbl"><tr>'
-    +'<td class="kop-logo"><img src="'+LOGO_KKP+'"></td>'
+    +'<td class="kop-logo">'+logoHtml+'</td>'
     +'<td class="kop-txt">'
     +'<div class="kop-k1">KEMENTERIAN KELAUTAN DAN PERIKANAN</div>'
     +'<div class="kop-k2">BADAN PENYULUHAN DAN PENGEMBANGAN</div>'
